@@ -120,7 +120,7 @@ Bohme_Trading_System/
 
 1. **Pobierz system**
    ```bash
-   git clone https://github.com/your-repo/Bohme_Trading_System.git
+   git clone https://github.com/KrzysztofPiekarski/Bohme_Trading_System.git
    ```
 
 2. **Skopiuj pliki do MT5**
