@@ -421,7 +421,7 @@ SOFTWARE.
 
 ### Kontakt
 - **Email:** support@bohme-trading.com
-- **GitHub:** https://github.com/your-repo/Bohme_Trading_System
+- **GitHub:** https://github.com/KrzysztofPiekarski/Bohme_Trading_System
 - **Dokumentacja:** https://docs.bohme-trading.com
 
 ### Społeczność
