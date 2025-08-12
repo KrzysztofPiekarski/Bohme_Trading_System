@@ -430,10 +430,10 @@ SOFTWARE.
 - **Telegram:** https://t.me/bohme_trading
 
 ### Współtwórcy
-- **Główny Developer:** [Twoje Imię]
-- **AI Specialist:** [Specjalista AI]
-- **GUI Designer:** [Designer GUI]
-- **Tester:** [Tester]
+- **Główny Developer:** [Krzysztof Piekarski]
+- **AI Specialist:** [Krzysztof Piekarski]
+- **GUI Designer:** [Krzysztof Piekarski]
+- **Tester:** []
 
 ---
 
