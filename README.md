@@ -1,183 +1,147 @@
-🌙 Böhme System v2.0 – Advanced AI-Powered Trading System
-📋 Table of Contents
-System Overview
+# 🌙 System Böhmego v2.0 - Zaawansowany System Tradingowy z AI
 
-Architecture
+## 📋 Spis Treści
+- [Przegląd Systemu](#przegląd-systemu)
+- [Architektura](#architektura)
+- [Instalacja](#instalacja)
+- [Konfiguracja](#konfiguracja)
+- [Użycie](#użycie)
+- [GUI](#gui)
+- [Testowanie](#testowanie)
+- [API](#api)
+- [Troubleshooting](#troubleshooting)
+- [Changelog](#changelog)
+- [Licencja](#licencja)
 
-Installation
+## 🎯 Przegląd Systemu
 
-Configuration
+System Böhmego v2.0 to zaawansowany system tradingowy oparty na filozofii siedmiu duchów rynku, zintegrowany z najnowocześniejszymi technologiami AI i machine learning. System wykorzystuje kompleksową analizę techniczną, fundamentalną i sentymentową do podejmowania decyzji tradingowych.
 
-Usage
+### 🌟 Kluczowe Funkcje
+- **7 Duchów Rynku** - każdy specjalizujący się w innym aspekcie analizy
+- **Zaawansowane AI** - sieci neuronowe, uczenie wzmacniające, rozpoznawanie wzorców
+- **Kompleksowe GUI** - monitoring w czasie rzeczywistym z zaawansowanymi metrykami
+- **System Testowania** - testy jednostkowe, integracyjne i automatyczne
+- **Zarządzanie Ryzykiem** - zaawansowane algorytmy zarządzania pozycjami
+- **Integracja Danych** - wieloźródłowe pobieranie danych rynkowych i wiadomości
 
-GUI
+## 🏗️ Architektura
 
-Testing
-
-API
-
-Troubleshooting
-
-Changelog
-
-License
-
-🎯 System Overview
-Böhme System v2.0 is an advanced trading system based on the philosophy of the Seven Spirits of the Market, integrated with the latest AI and machine learning technologies. The system uses a comprehensive combination of technical, fundamental, and sentiment analysis to make trading decisions.
-
-🌟 Key Features
-7 Spirits of the Market – each specializing in a different type of analysis
-
-Advanced AI – neural networks, reinforcement learning, and pattern recognition
-
-Comprehensive GUI – real-time monitoring with advanced metrics
-
-Testing System – unit, integration, and automated tests
-
-Risk Management – advanced position management algorithms
-
-Data Integration – multi-source market and news data feeds
-
-🏗️ Architecture
-Directory Structure
-bash
-Copy
-Edit
+### Struktura Katalogów
+```
 Bohme_Trading_System/
-├── Core/                    # Main system components
-│   ├── BohmeMainSystem.mql5 # Main system file
-│   ├── BohmeGUI.mqh         # Advanced GUI
-│   ├── MasterConsciousness.mqh # Central coordinator
-│   └── SystemConfig.mqh     # System configuration
-├── AI/                      # AI components
-│   ├── AdvancedAI.mqh       # Advanced AI
-│   ├── NeuralNetworks.mqh   # Neural networks
-│   ├── ReinforcementLearning.mqh # Reinforcement learning
-│   ├── PatternRecognition.mqh # Pattern recognition
-│   └── MachineLearning.mqh  # Machine learning algorithms
-├── Spirits/                 # Seven market spirits
-│   ├── LightSpirit.mqh      # Market illumination
-│   ├── FireSpirit.mqh       # Market energy
-│   ├── BitternessSpirit.mqh # Momentum
-│   ├── BodySpirit.mqh       # Market structure
-│   ├── HerbeSpirit.mqh      # Fundamentals
-│   ├── SweetnessSpirit.mqh  # Sentiment
-│   └── SoundSpirit.mqh      # Harmony
-├── Data/
-│   ├── DataManager.mqh      # Data management
-│   ├── EconomicCalendar.mqh # Economic calendar
-│   ├── NewsProcessor.mqh    # News processing
-│   └── SentimentAnalyzer.mqh # Sentiment analysis
-├── Execution/
-│   ├── ExecutionAlgorithms.mqh # Execution algorithms
-│   ├── RiskManager.mqh      # Risk management
-│   ├── PositionManager.mqh  # Position management
-│   └── OrderManager.mqh     # Order management
-├── Utils/
-│   ├── MathUtils.mqh        # Mathematical utilities
-│   ├── StringUtils.mqh      # String operations
-│   ├── TimeUtils.mqh        # Time functions
-│   └── LoggingSystem.mqh    # Logging system
-└── Tests/
-    ├── UnitTests.mqh        # Unit tests
-    ├── IntegrationTests.mqh # Integration tests
-    ├── BacktestFramework.mqh # Backtesting framework
-    └── LoggingSystemTest.mqh # Logging system tests
-The Seven Spirits of the Market
-1. 🌟 Light Spirit
-Purpose: Illuminate the market and identify trends
+├── Core/                    # Główne komponenty systemu
+│   ├── BohmeMainSystem.mql5 # Główny plik systemu
+│   ├── BohmeGUI.mqh         # Zaawansowane GUI
+│   ├── MasterConsciousness.mqh # Centralny koordynator
+│   └── SystemConfig.mqh     # Konfiguracja systemu
+├── AI/                      # Komponenty sztucznej inteligencji
+│   ├── AdvancedAI.mqh       # Zaawansowane AI
+│   ├── NeuralNetworks.mqh   # Sieci neuronowe
+│   ├── ReinforcementLearning.mqh # Uczenie wzmacniające
+│   ├── PatternRecognition.mqh # Rozpoznawanie wzorców
+│   └── MachineLearning.mqh  # Algorytmy ML
+├── Spirits/                 # Siedem duchów rynku
+│   ├── LightSpirit.mqh      # Duch światła - oświetlenie rynku
+│   ├── FireSpirit.mqh       # Duch ognia - energia rynku
+│   ├── BitternessSpirit.mqh # Duch goryczy - momentum
+│   ├── BodySpirit.mqh       # Duch ciała - struktura rynku
+│   ├── HerbeSpirit.mqh      # Duch ziół - fundamentalne
+│   ├── SweetnessSpirit.mqh  # Duch słodyczy - sentyment
+│   └── SoundSpirit.mqh      # Duch dźwięku - harmonia
+├── Data/                    # Komponenty danych
+│   ├── DataManager.mqh      # Zarządzanie danymi
+│   ├── EconomicCalendar.mqh # Kalendarz ekonomiczny
+│   ├── NewsProcessor.mqh    # Przetwarzanie wiadomości
+│   └── SentimentAnalyzer.mqh # Analiza sentymentu
+├── Execution/               # Komponenty wykonania
+│   ├── ExecutionAlgorithms.mqh # Algorytmy wykonania
+│   ├── RiskManager.mqh      # Zarządzanie ryzykiem
+│   ├── PositionManager.mqh  # Zarządzanie pozycjami
+│   └── OrderManager.mqh     # Zarządzanie zleceniami
+├── Utils/                   # Narzędzia pomocnicze
+│   ├── MathUtils.mqh        # Funkcje matematyczne
+│   ├── StringUtils.mqh      # Operacje na stringach
+│   ├── TimeUtils.mqh        # Funkcje czasowe
+│   └── LoggingSystem.mqh    # System logowania
+└── Tests/                   # System testowania
+    ├── UnitTests.mqh        # Testy jednostkowe
+    ├── IntegrationTests.mqh # Testy integracyjne
+    ├── BacktestFramework.mqh # Framework backtestingu
+    └── LoggingSystemTest.mqh # Testy logowania
+```
 
-AI: Advanced pattern recognition
+### Siedem Duchów Rynku
 
-Metrics: Trend identification accuracy, analysis speed
+#### 1. 🌟 Light Spirit (Duch Światła)
+- **Funkcja:** Oświetlenie rynku i identyfikacja trendów
+- **AI:** Zaawansowane algorytmy rozpoznawania wzorców
+- **Metryki:** Dokładność identyfikacji trendów, szybkość analizy
 
-2. 🔥 Fire Spirit
-Purpose: Analyze market energy and impulses
+#### 2. 🔥 Fire Spirit (Duch Ognia)
+- **Funkcja:** Analiza energii rynku i impulsów
+- **AI:** Sieci neuronowe do analizy momentum
+- **Metryki:** Siła impulsów, energia rynku
 
-AI: Neural networks for momentum analysis
+#### 3. 🍂 Bitterness Spirit (Duch Goryczy)
+- **Funkcja:** Analiza momentum i konwergencji
+- **AI:** Algorytmy uczenia wzmacniającego
+- **Metryki:** Konwergencja momentum, siła trendu
 
-Metrics: Impulse strength, market energy
+#### 4. 💪 Body Spirit (Duch Ciała)
+- **Funkcja:** Analiza struktury rynku i gotowości do wykonania
+- **AI:** Machine learning do oceny struktury
+- **Metryki:** Jakość wykonania, struktura rynku
 
-3. 🍂 Bitterness Spirit
-Purpose: Momentum and convergence analysis
+#### 5. 🌿 Herbe Spirit (Duch Ziół)
+- **Funkcja:** Analiza fundamentalna i konfliktów
+- **AI:** Analiza danych fundamentalnych
+- **Metryki:** Siła konfliktów fundamentalnych
 
-AI: Reinforcement learning
+#### 6. 🍯 Sweetness Spirit (Duch Słodyczy)
+- **Funkcja:** Analiza sentymentu i harmonii rynku
+- **AI:** Analiza sentymentu i crowdsourcing
+- **Metryki:** Indeks harmonii, sentyment rynku
 
-Metrics: Momentum convergence, trend strength
+#### 7. 🎵 Sound Spirit (Duch Dźwięku)
+- **Funkcja:** Analiza harmonii i synchronizacji
+- **AI:** Algorytmy synchronizacji rynkowej
+- **Metryki:** Harmonia rynku, synchronizacja
 
-4. 💪 Body Spirit
-Purpose: Market structure analysis and execution readiness
+## 🚀 Instalacja
 
-AI: Machine learning for structural assessment
+### Wymagania Systemowe
+- MetaTrader 5 (najnowsza wersja)
+- Windows 10/11 lub Linux z Wine
+- Minimum 4GB RAM
+- Połączenie internetowe dla danych rynkowych
 
-Metrics: Execution quality, market structure
+### Instrukcja Instalacji
 
-5. 🌿 Herbe Spirit
-Purpose: Fundamental analysis and conflicts
+1. **Pobierz system**
+   ```bash
+   git clone https://github.com/your-repo/Bohme_Trading_System.git
+   ```
 
-AI: Fundamental data processing
+2. **Skopiuj pliki do MT5**
+   - Skopiuj cały folder `Bohme_Trading_System` do katalogu `MQL5/Experts/`
+   - Uruchom MetaTrader 5
 
-Metrics: Strength of fundamental conflicts
+3. **Kompilacja**
+   - Otwórz MetaEditor w MT5
+   - Skompiluj `Core/BohmeMainSystem.mql5`
+   - Rozwiąż wszystkie błędy kompilacji
 
-6. 🍯 Sweetness Spirit
-Purpose: Sentiment and market harmony analysis
+4. **Konfiguracja**
+   - Otwórz `Core/SystemConfig.mqh`
+   - Dostosuj parametry do swoich potrzeb
+   - Zapisz zmiany
 
-AI: Sentiment analysis and crowdsourcing
+## ⚙️ Konfiguracja
 
-Metrics: Harmony index, market sentiment
-
-7. 🎵 Sound Spirit
-Purpose: Harmony and synchronization analysis
-
-AI: Market synchronization algorithms
-
-Metrics: Market harmony, synchronization
-
-🚀 Installation
-System Requirements
-MetaTrader 5 (latest version)
-
-Windows 10/11 or Linux with Wine
-
-Minimum 4GB RAM
-
-Internet connection for market data
-
-Installation Steps
-Download the system
-
-bash
-Copy
-Edit
-git clone https://github.com/your-repo/Bohme_Trading_System.git
-Copy files to MT5
-
-Copy the Bohme_Trading_System folder into MQL5/Experts/
-
-Launch MetaTrader 5
-
-Compile
-
-Open MetaEditor in MT5
-
-Compile Core/BohmeMainSystem.mql5
-
-Resolve any compilation errors
-
-Configure
-
-Open Core/SystemConfig.mqh
-
-Adjust parameters as needed
-
-Save changes
-
-⚙️ Configuration
-Basic Configuration
-mql5
-Copy
-Edit
-// Enable/disable spirits
+### Podstawowa Konfiguracja
+```mql5
+// Włączanie/wyłączanie duchów
 g_config.enable_light_spirit = true;
 g_config.enable_fire_spirit = true;
 g_config.enable_bitterness_spirit = true;
@@ -186,137 +150,291 @@ g_config.enable_herbe_spirit = true;
 g_config.enable_sweetness_spirit = true;
 g_config.enable_sound_spirit = true;
 
-// Analysis parameters
-g_config.analysis_interval = 60; // seconds
+// Parametry analizy
+g_config.analysis_interval = 60; // sekundy
 g_config.enable_logging_system = true;
 g_config.log_level = LOG_LEVEL_INFO;
-Advanced GUI Configuration
-mql5
-Copy
-Edit
+```
+
+### Zaawansowana Konfiguracja GUI
+```mql5
 // GUI Settings
 g_advanced_gui_state.auto_refresh = true;
-g_advanced_gui_state.refresh_interval = 2; // seconds
+g_advanced_gui_state.refresh_interval = 2; // sekundy
 g_advanced_gui_state.enable_auto_testing = true;
-g_advanced_gui_state.auto_test_interval = 300; // 5 minutes
+g_advanced_gui_state.auto_test_interval = 300; // 5 minut
 g_advanced_gui_state.enable_notifications = true;
-🎮 Usage
-Basic Usage
-Run the system
+```
 
-Attach BohmeMainSystem to a chart
+## 🎮 Użycie
 
-The system will automatically initialize all components
+### Podstawowe Użycie
 
-Manage spirits
+1. **Uruchom system**
+   - Dodaj `BohmeMainSystem` do wykresu
+   - System automatycznie zainicjalizuje wszystkie komponenty
 
-Use the GUI to enable/disable spirits
+2. **Zarządzanie duchami**
+   - Użyj GUI do włączania/wyłączania duchów
+   - Monitoruj wydajność w czasie rzeczywistym
+   - Testuj poszczególne duchy
 
-Monitor real-time performance
+3. **Monitoring**
+   - Obserwuj metryki systemowe
+   - Sprawdzaj alerty i powiadomienia
+   - Analizuj raporty wydajności
 
-Test individual spirits
+### Skróty Klawiszowe
+- **1-6:** Przełączanie zakładek GUI
+- **S:** Start wszystkich duchów
+- **T:** Test wszystkich duchów
+- **R:** Generuj raport systemu
+- **ESC:** Ukryj GUI
+- **SPACE:** Przełącz widoczność GUI
 
-Monitoring
+## 🎨 GUI (Graphical User Interface)
 
-Observe system metrics
+### Podstawowe GUI
+- **Rozmiar:** 400x600 pikseli
+- **4 zakładki:** Duchy, Dane, Wykonanie, Testy
+- **7 paneli duchów** z kontrolkami
+- **Panel kontrolny** z przyciskami masowymi
+- **Wskaźniki statusu** systemu
 
-Check alerts and notifications
+### Zaawansowane GUI
+- **Rozmiar:** 800x700 pikseli
+- **6 zaawansowanych zakładek**
+- **Szczegółowe metryki** każdego ducha
+- **Wykresy wydajności** w czasie rzeczywistym
+- **System alertów** z powiadomieniami
+- **Metryki tradingowe** (P&L, win rate, drawdown)
 
-Review performance reports
+### Funkcje GUI
+```mql5
+// Zarządzanie duchami
+ToggleSpirit(string spirit_name);
+StartAllSpirits();
+StopAllSpirits();
 
-Keyboard Shortcuts
-1-6: Switch GUI tabs
+// Testowanie
+TestSpirit(string spirit_name);
+TestAllSpirits();
 
-S: Start all spirits
+// Monitoring
+UpdateAdvancedGUI();
+CheckForAlerts();
+```
 
-T: Test all spirits
+## 🧪 Testowanie
 
-R: Generate system report
+### System Testowania
+System zawiera kompleksowy framework testowania:
 
-ESC: Hide GUI
+#### Testy Jednostkowe
+- **Pokrycie:** 100% wszystkich komponentów
+- **24 komponenty** testowane
+- **Automatyczne raporty** z wynikami
+- **Metryki wydajności** i czasu wykonania
 
-SPACE: Toggle GUI visibility
+#### Testy Integracyjne
+- **Testy interakcji** między komponentami
+- **Testy wydajności** systemu
+- **Testy obsługi błędów**
+- **Testy Master Consciousness**
 
-🎨 GUI
-Basic GUI
-Size: 400x600 px
+#### Automatyczne Testy
+- **Interwał:** co 5 minut
+- **Testowanie aktywnych duchów**
+- **Testowanie komponentów systemu**
+- **Raporty automatyczne**
 
-4 tabs: Spirits, Data, Execution, Testing
+### Uruchamianie Testów
+```mql5
+// Testy jednostkowe
+RunBohmeUnitTests();
 
-7 spirit panels with controls
+// Testy integracyjne
+CBohmeIntegrationTester* tester = new CBohmeIntegrationTester();
+tester.RunAllTests();
 
-Control panel with mass-action buttons
+// Automatyczne testy
+if(g_advanced_gui_state.enable_auto_testing) {
+    RunAutoTests();
+}
+```
 
-Status indicators
+## 🔌 API
 
-Advanced GUI
-Size: 800x700 px
+### Główne Funkcje API
 
-6 advanced tabs
+#### Inicjalizacja Systemu
+```mql5
+int OnInit();                    // Inicjalizacja systemu
+void OnDeinit(const int reason); // Deinicjalizacja
+void OnTick();                   // Główna pętla
+```
 
-Detailed metrics for each spirit
+#### Zarządzanie Duchami
+```mql5
+bool InitializeAllSpirits();     // Inicjalizacja wszystkich duchów
+void UpdateAllSpirits();         // Aktualizacja duchów
+void AnalyzeMarketWithAllSpirits(); // Analiza rynku
+```
 
-Real-time performance charts
+#### GUI API
+```mql5
+void InitializeGUI();            // Inicjalizacja GUI
+void UpdateGUI();                // Aktualizacja GUI
+void HandleGUIEvent();           // Obsługa zdarzeń GUI
+```
 
-Alert system with notifications
+#### Testowanie API
+```mql5
+void TestAllComponents();        // Test wszystkich komponentów
+void TestDataComponents();       // Test komponentów danych
+void TestExecutionComponents();  // Test komponentów wykonania
+```
 
-Trading metrics (P&L, win rate, drawdown)
+### Struktury Danych
+```mql5
+// Status ducha
+struct SSpiritStatus {
+    string name;
+    bool is_active;
+    double performance_score;
+    string status_text;
+    color status_color;
+};
 
-🧪 Testing
-Testing Framework
-The system includes:
+// Metryki systemu
+struct SSystemMetrics {
+    double cpu_usage;
+    double memory_usage;
+    double network_usage;
+    int error_rate;
+    double throughput;
+};
 
-Unit Tests – 100% component coverage
+// Wyniki testów
+struct STestResult {
+    string test_name;
+    bool passed;
+    double execution_time;
+    string details;
+    datetime timestamp;
+};
+```
 
-Integration Tests – interactions, performance, error handling
+## 🔧 Troubleshooting
 
-Automated Tests – background checks every 5 minutes
+### Częste Problemy
 
-🔌 API
-Main API functions include:
+#### Problem: Błędy kompilacji
+**Rozwiązanie:**
+1. Sprawdź czy wszystkie pliki są w odpowiednich katalogach
+2. Upewnij się, że MT5 jest aktualny
+3. Sprawdź logi kompilacji w MetaEditor
 
-Initialization: OnInit(), OnDeinit(), OnTick()
+#### Problem: GUI nie wyświetla się
+**Rozwiązanie:**
+1. Sprawdź czy `OnChartEvent` jest włączony
+2. Upewnij się, że `InitializeGUI()` jest wywoływane
+3. Sprawdź logi systemu
 
-Spirit management: InitializeAllSpirits(), AnalyzeMarketWithAllSpirits()
+#### Problem: Duchy nie działają
+**Rozwiązanie:**
+1. Sprawdź konfigurację w `SystemConfig.mqh`
+2. Uruchom testy jednostkowe
+3. Sprawdź logi inicjalizacji
 
-GUI management: InitializeGUI(), UpdateGUI()
+#### Problem: Wysokie użycie CPU
+**Rozwiązanie:**
+1. Zwiększ `analysis_interval` w konfiguracji
+2. Wyłącz niepotrzebne duchy
+3. Dostosuj `refresh_interval` GUI
 
-Testing: TestAllComponents()
+### Logi i Debugowanie
+```mql5
+// Włączanie szczegółowych logów
+g_config.log_level = LOG_LEVEL_DEBUG;
+g_config.enable_logging_system = true;
 
-🔧 Troubleshooting
-Common issues and fixes:
+// Sprawdzanie logów
+LogInfo(LOG_COMPONENT_SYSTEM, "Message", "Details");
+LogError(LOG_COMPONENT_SYSTEM, "Error", "Details");
+LogWarning(LOG_COMPONENT_SYSTEM, "Warning", "Details");
+```
 
-Compilation errors: Check file structure, MT5 version, compilation logs
+## 📝 Changelog
 
-GUI not showing: Ensure OnChartEvent is enabled, check initialization calls
+### v2.0.0 (Aktualna)
+- ✅ **Kompletne GUI** z monitoringiem w czasie rzeczywistym
+- ✅ **100% pokrycie testami** wszystkich komponentów
+- ✅ **Integracja wszystkich folderów** (Data, Utils, Execution, Tests)
+- ✅ **Zaawansowane AI** z sieciami neuronowymi
+- ✅ **System alertów** z powiadomieniami
+- ✅ **Automatyczne testy** w tle
+- ✅ **Metryki tradingowe** (P&L, win rate, drawdown)
+- ✅ **Wykresy wydajności** w czasie rzeczywistym
+- ✅ **Dynamiczne zarządzanie duchami**
+- ✅ **Kompleksowe raporty** systemu
 
-High CPU usage: Increase analysis_interval, disable unused spirits
+### v1.5.0
+- Dodano system testowania
+- Integracja komponentów Data i Utils
+- Podstawowe GUI
 
-📝 Changelog
-v2.0.0
-Full advanced GUI
+### v1.0.0
+- Podstawowa implementacja siedmiu duchów
+- Master Consciousness
+- Podstawowa analiza rynku
 
-100% testing coverage
+## 📄 Licencja
 
-Integrated all system modules
+System Böhmego v2.0 jest objęty licencją MIT.
 
-Advanced AI and alerts
+```
+MIT License
 
-Automated background tests
+Copyright (c) 2024 Bohme Trading System
 
-📄 License
-MIT License © 2024 Böhme Trading System
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-🤝 Support
-Email: support@bohme-trading.com
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-GitHub: https://github.com/KrzysztofPiekarski/Bohme_Trading_System
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
-Documentation: https://docs.bohme-trading.com
+## 🤝 Wsparcie
 
-Discord: https://discord.gg/bohme-trading
+### Kontakt
+- **Email:** support@bohme-trading.com
+- **GitHub:** https://github.com/your-repo/Bohme_Trading_System
+- **Dokumentacja:** https://docs.bohme-trading.com
 
-Telegram: https://t.me/bohme_trading
+### Społeczność
+- **Forum:** https://forum.bohme-trading.com
+- **Discord:** https://discord.gg/bohme-trading
+- **Telegram:** https://t.me/bohme_trading
 
-🌙 Böhme System v2.0 – Where Philosophy Meets Technology 🚀
+### Współtwórcy
+- **Główny Developer:** [Twoje Imię]
+- **AI Specialist:** [Specjalista AI]
+- **GUI Designer:** [Designer GUI]
+- **Tester:** [Tester]
 
+---
+
+**🌙 System Böhmego v2.0 - Gdzie Filozofia Spotyka Technologię** 🚀 
