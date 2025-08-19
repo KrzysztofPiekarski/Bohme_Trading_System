@@ -46,9 +46,9 @@ public:
     bool Initialize();
     bool InitializeWeights();
     
-    // Forward pass
+    // Forward pass - POPRAWKA: usunięto 'input' z nazwy parametru
     double ForwardPass(double &sequence[]);
-    double Predict(double &input[]);
+    double Predict(double &sequence[]);
     
     // Backward pass
     bool BackwardPass(double &targets[], double learning_rate);
@@ -101,15 +101,15 @@ public:
     bool Initialize();
     bool InitializeWeights();
     
-    // Forward pass
-    bool ForwardPass(double &input[], double &output[]);
-    double Predict(double &input[]);
+    // Forward pass - POPRAWKA: zmieniono nazwy parametrów
+    bool ForwardPass(double &data_input[], double &data_output[]);
+    double Predict(double &data_input[]);
     
     // Backward pass
     bool BackwardPass(double &gradients[], double learning_rate);
     
-    // Trening
-    bool Train(double &inputs[], double &targets[], int epochs);
+    // Trening - POPRAWKA: zmieniono nazwy parametrów
+    bool Train(double &data_inputs[], double &targets[], int epochs);
     bool UpdateWeights(double learning_rate);
     
     // Narzędzia
@@ -117,6 +117,7 @@ public:
     string GetSummary();
     void Reset();
 };
+
 // CConvolutionalNetwork implementation
 CConvolutionalNetwork::CConvolutionalNetwork(int input_width, int input_height, int input_channels, 
                          int num_filters, int filter_size, int stride, int padding) {
@@ -133,7 +134,6 @@ CConvolutionalNetwork::CConvolutionalNetwork(int input_width, int input_height, 
 
 CConvolutionalNetwork::~CConvolutionalNetwork() {
 }
-
 
 // Transformer Network dla analizy uwagi
 class CTransformerNetwork {
@@ -182,13 +182,13 @@ public:
     bool Initialize();
     bool InitializeWeights();
     
-    // Forward pass
+    // Forward pass - POPRAWKA: zmieniono nazwy parametrów
     double ForwardPass(double &sequence[]);
-    double Predict(double &input[]);
+    double Predict(double &data_input[]);
     
     // Attention mechanism
     bool MultiHeadAttention(double &query[], double &key[], double &value[], 
-                           double &output[], double &attention_weights[]);
+                           double &data_output[], double &attention_weights[]);
     
     // Backward pass
     bool BackwardPass(double &targets[], double learning_rate);
@@ -202,6 +202,7 @@ public:
     string GetSummary();
     void Reset();
 };
+
 // CTransformerNetwork implementation
 CTransformerNetwork::CTransformerNetwork(int input_size, int hidden_size, int num_heads, 
                         int num_layers, int sequence_length) {
@@ -217,7 +218,6 @@ CTransformerNetwork::CTransformerNetwork(int input_size, int hidden_size, int nu
 
 CTransformerNetwork::~CTransformerNetwork() {
 }
-
 
 // === IMPLEMENTACJE SPECJALISTYCZNE DLA DUCHÓW ===
 
@@ -443,8 +443,8 @@ double CLSTMNetwork::ForwardPass(double &sequence[]) {
     return output / MathMax(1, m_hidden_size);
 }
 
-double CLSTMNetwork::Predict(double &input[]) {
-    return ForwardPass(input);
+double CLSTMNetwork::Predict(double &sequence[]) {
+    return ForwardPass(sequence);
 }
 
 bool CLSTMNetwork::Train(double &sequences[], int sequence_stride, double &targets[], int epochs) {
@@ -508,11 +508,6 @@ void CLSTMNetwork::Reset() {
     // Reset stanów i cache
     ArrayInitialize(m_hidden_state, 0.0);
     ArrayInitialize(m_cell_state, 0.0);
-    for(int t = 0; t < m_sequence_length; t++) {
-        if(ArraySize(m_hidden_cache[t]) > 0) ArrayInitialize(m_hidden_cache[t], 0.0);
-        if(ArraySize(m_cell_cache[t]) > 0) ArrayInitialize(m_cell_cache[t], 0.0);
-        if(ArraySize(m_gate_cache[t]) > 0) ArrayInitialize(m_gate_cache[t], 0.0);
-    }
 }
 
 bool CLSTMNetwork::UpdateWeights(double learning_rate) {
@@ -547,19 +542,19 @@ bool CConvolutionalNetwork::InitializeWeights() {
     return true;
 }
 
-bool CConvolutionalNetwork::ForwardPass(double &input[], double &output[]) {
+bool CConvolutionalNetwork::ForwardPass(double &data_input[], double &data_output[]) {
     // Uproszczony forward: przekopiuj wejście do wyjścia (1D)
-    int n = ArraySize(input);
+    int n = ArraySize(data_input);
     if(n <= 0) return false;
-    ArrayResize(output, n);
-    for(int i = 0; i < n; i++) output[i] = input[i];
+    ArrayResize(data_output, n);
+    for(int i = 0; i < n; i++) data_output[i] = data_input[i];
     return true;
 }
 
-double CConvolutionalNetwork::Predict(double &input[]) {
+double CConvolutionalNetwork::Predict(double &data_input[]) {
     double sum = 0.0;
-    int n = ArraySize(input);
-    for(int i = 0; i < n; i++) sum += input[i];
+    int n = ArraySize(data_input);
+    for(int i = 0; i < n; i++) sum += data_input[i];
     return sum;
 }
 
@@ -568,7 +563,7 @@ bool CConvolutionalNetwork::BackwardPass(double &gradients[], double learning_ra
     return true;
 }
 
-bool CConvolutionalNetwork::Train(double &inputs[], double &targets[], int epochs) {
+bool CConvolutionalNetwork::Train(double &data_inputs[], double &targets[], int epochs) {
     // Placeholder treningu
     m_is_trained = true;
     return true;
@@ -616,14 +611,14 @@ double CTransformerNetwork::ForwardPass(double &sequence[]) {
     return s / n;
 }
 
-double CTransformerNetwork::Predict(double &input[]) { return ForwardPass(input); }
+double CTransformerNetwork::Predict(double &data_input[]) { return ForwardPass(data_input); }
 
 bool CTransformerNetwork::MultiHeadAttention(double &query[], double &key[], double &value[], 
-                           double &output[], double &attention_weights[]) {
+                           double &data_output[], double &attention_weights[]) {
     // Uproszczone: skopiuj value do output
     int n = ArraySize(value);
-    ArrayResize(output, n);
-    for(int i = 0; i < n; i++) output[i] = value[i];
+    ArrayResize(data_output, n);
+    for(int i = 0; i < n; i++) data_output[i] = value[i];
     // attention_weights pusta placeholder 1D
     ArrayResize(attention_weights, n);
     ArrayInitialize(attention_weights, 0.0);
@@ -692,6 +687,12 @@ bool CFireSpiritAI::Initialize() {
     }
     
     return LoadHistoricalData();
+}
+
+bool CFireSpiritAI::LoadHistoricalData() {
+    // Placeholder dla ładowania danych historycznych
+    LogInfo(LOG_COMPONENT_FIRE, "Ładowanie danych historycznych", "Inicjalizacja bufora danych");
+    return true;
 }
 
 double CFireSpiritAI::GetVolatility() {

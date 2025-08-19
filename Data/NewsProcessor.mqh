@@ -48,19 +48,20 @@ enum ENUM_NEWS_IMPACT {
 };
 
 // Źródła wiadomości
+// Ujednolicenie z ENUM_DATA_SOURCE w EconomicCalendar.mqh – nie duplikujemy nazw stałych
 enum ENUM_NEWS_SOURCE {
-    SOURCE_UNKNOWN,                // Nieznane źródło
-    SOURCE_REUTERS,                // Reuters
-    SOURCE_BLOOMBERG,              // Bloomberg
-    SOURCE_CNBC,                   // CNBC
-    SOURCE_FINANCIAL_TIMES,        // Financial Times
-    SOURCE_WALL_STREET_JOURNAL,    // Wall Street Journal
-    SOURCE_FORBES,                 // Forbes
-    SOURCE_TWITTER,                // Twitter
-    SOURCE_REDDIT,                 // Reddit
-    SOURCE_TELEGRAM,               // Telegram
-    SOURCE_DISCORD,                // Discord
-    SOURCE_CUSTOM                  // Źródło niestandardowe
+    NEWS_SOURCE_UNKNOWN,                // Nieznane źródło
+    NEWS_SOURCE_REUTERS,                // Reuters
+    NEWS_SOURCE_BLOOMBERG,              // Bloomberg
+    NEWS_SOURCE_CNBC,                   // CNBC
+    NEWS_SOURCE_FINANCIAL_TIMES,        // Financial Times
+    NEWS_SOURCE_WALL_STREET_JOURNAL,    // Wall Street Journal
+    NEWS_SOURCE_FORBES,                 // Forbes
+    NEWS_SOURCE_TWITTER,                // Twitter
+    NEWS_SOURCE_REDDIT,                 // Reddit
+    NEWS_SOURCE_TELEGRAM,               // Telegram
+    NEWS_SOURCE_DISCORD,                // Discord
+    NEWS_SOURCE_CUSTOM                  // Źródło niestandardowe
 };
 
 // === ŹRÓDŁA DANYCH ===
@@ -411,15 +412,15 @@ public:
         // Symulacja początkowych wiadomości
         AddNews("Fed podnosi stopy procentowe", 
                 "Federal Reserve podniosła stopy procentowe o 25 punktów bazowych, co jest zgodne z oczekiwaniami rynku.",
-                NEWS_CENTRAL_BANK, SOURCE_REUTERS, "USD", "EURUSD");
+                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
         
         AddNews("Silne dane NFP", 
                 "Non-Farm Payrolls pokazały wzrost o 200,000 miejsc pracy, przewyższając oczekiwania analityków.",
-                NEWS_ECONOMIC, SOURCE_BLOOMBERG, "USD", "EURUSD");
+                NEWS_ECONOMIC, NEWS_SOURCE_BLOOMBERG, "USD", "EURUSD");
         
         AddNews("Napięcia geopolityczne", 
                 "Rosnące napięcia na Bliskim Wschodzie wpływają na ceny ropy naftowej i bezpieczne aktywa.",
-                NEWS_GEOPOLITICAL, SOURCE_CNBC, "USD", "EURUSD");
+                NEWS_GEOPOLITICAL, NEWS_SOURCE_CNBC, "USD", "EURUSD");
         
         Print("📰 Przetworzono początkowe wiadomości");
         return true;
@@ -912,21 +913,19 @@ public:
         return m_impacts;
     }
     
-    NewsItem[] GetRecentNews(int count = 10) {
+    void GetRecentNews(NewsItem &out_recent[], int count = 10) {
         UpdateNewsProcessor();
-        NewsItem recent[];
+        ArrayResize(out_recent, 0);
         
         int start = MathMax(0, ArraySize(m_news) - count);
         int size = ArraySize(m_news) - start;
         
         if(size > 0) {
-            ArrayResize(recent, size);
+            ArrayResize(out_recent, size);
             for(int i = 0; i < size; i++) {
-                recent[i] = m_news[start + i];
+                out_recent[i] = m_news[start + i];
             }
         }
-        
-        return recent;
     }
     
     NewsStatistics GetStatistics() {
@@ -1217,19 +1216,19 @@ public:
                     // Filtrowanie wiadomości biznesowych
                     if(StringFind(title, "Fed") >= 0 || StringFind(title, "Federal Reserve") >= 0) {
                         AddNewsItem("Reuters - " + title, "Federal Reserve news from Reuters", 
-                                NEWS_CENTRAL_BANK, SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
                                 "USD", current_time - 1800, 0.1, 0.85, 0.7, true, true, true);
                         news_added++;
                     }
                     else if(StringFind(title, "Market") >= 0 || StringFind(title, "Stock") >= 0) {
                         AddNewsItem("Reuters - " + title, "Market news from Reuters", 
-                                NEWS_CORPORATE, SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
+                                NEWS_CORPORATE, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
                                 "USD", current_time - 3600, 0.0, 0.80, 0.5, true, true, false);
                         news_added++;
                     }
                     else if(StringFind(title, "Economy") >= 0 || StringFind(title, "GDP") >= 0) {
                         AddNewsItem("Reuters - " + title, "Economic news from Reuters", 
-                                NEWS_ECONOMIC, SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
+                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
                                 "USD", current_time - 2700, 0.0, 0.90, 0.8, true, true, true);
                         news_added++;
                     }
@@ -1250,7 +1249,7 @@ public:
                     
                     if(StringFind(description, "Fed") >= 0 || StringFind(description, "Federal Reserve") >= 0) {
                         AddNewsItem("Reuters - Fed News", description, 
-                                NEWS_CENTRAL_BANK, SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_HIGH, 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_HIGH, 
                                 "USD", current_time - 1800, sentiment, 0.85, 0.7, true, true, true);
                         news_added++;
                     }
@@ -1319,12 +1318,12 @@ public:
         
         AddNewsItem("Reuters - Fed Signals Rate Cut", 
                    "Federal Reserve signals potential interest rate cut in next meeting", 
-                   NEWS_ECONOMIC, SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
+                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
                    "USD", current_time - 1800, 0.1, 0.85, 0.7, true, true, true);
         
         AddNewsItem("Reuters - Market Rally Continues", 
                    "Stock market continues rally as tech stocks lead gains", 
-                   NEWS_CORPORATE, SOURCE_REUTERS, SENTIMENT_POSITIVE, NEWS_IMPACT_MEDIUM, 
+                   NEWS_CORPORATE, NEWS_SOURCE_REUTERS, SENTIMENT_POSITIVE, NEWS_IMPACT_MEDIUM, 
                    "USD", current_time - 3600, 0.3, 0.90, 0.5, true, true, false);
     }
     
@@ -1392,13 +1391,13 @@ public:
                     
                     if(StringFind(title, "ECB") >= 0 || StringFind(title, "European Central Bank") >= 0) {
                         AddNewsItem("Bloomberg - " + title, "European Central Bank maintains current monetary policy stance", 
-                                NEWS_CENTRAL_BANK, SOURCE_BLOOMBERG, sentiment_level, NEWS_IMPACT_HIGH, 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, sentiment_level, NEWS_IMPACT_HIGH, 
                                 "EUR", current_time - 7200, sentiment, 0.95, 0.8, true, true, true);
                         news_added++;
                     }
                     else if(StringFind(title, "Brexit") >= 0) {
                         AddNewsItem("Financial Times - " + title, "Latest developments in Brexit negotiations affect market sentiment", 
-                                NEWS_POLITICAL, SOURCE_FINANCIAL_TIMES, sentiment_level, NEWS_IMPACT_HIGH, 
+                                NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, sentiment_level, NEWS_IMPACT_HIGH, 
                                 "GBP", current_time - 5400, sentiment, 0.88, 0.9, true, true, true);
                         news_added++;
                     }
@@ -1417,12 +1416,12 @@ public:
         
         AddNewsItem("Bloomberg - ECB Policy Decision", 
                    "European Central Bank maintains current monetary policy stance", 
-                   NEWS_CENTRAL_BANK, SOURCE_BLOOMBERG, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
+                   NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
                    "EUR", current_time - 7200, 0.0, 0.95, 0.8, true, true, true);
         
         AddNewsItem("Financial Times - Brexit Update", 
                    "Latest developments in Brexit negotiations affect market sentiment", 
-                   NEWS_POLITICAL, SOURCE_FINANCIAL_TIMES, SENTIMENT_NEGATIVE, NEWS_IMPACT_HIGH, 
+                   NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, SENTIMENT_NEGATIVE, NEWS_IMPACT_HIGH, 
                    "GBP", current_time - 5400, -0.2, 0.88, 0.9, true, true, true);
     }
     
@@ -1570,13 +1569,13 @@ public:
                     
                     if(StringFind(title, "Economic") >= 0 || StringFind(title, "GDP") >= 0) {
                         AddNewsItem("AP - " + title, "Latest economic indicators show mixed signals for market direction", 
-                                NEWS_ECONOMIC, SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
+                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
                                 "USD", current_time - 2700, sentiment, 0.92, 0.7, true, true, false);
                         news_added++;
                     }
                     else if(StringFind(title, "Oil") >= 0 || StringFind(title, "Crude") >= 0) {
                         AddNewsItem("Reuters - " + title, "Oil prices fluctuate amid supply concerns and demand forecasts", 
-                                NEWS_COMMODITIES, SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
+                                NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
                                 "OIL", current_time - 3600, sentiment, 0.89, 0.6, true, true, false);
                         news_added++;
                     }
@@ -1595,12 +1594,12 @@ public:
         
         AddNewsItem("AP - Economic Data Release", 
                    "Latest economic indicators show mixed signals for market direction", 
-                   NEWS_ECONOMIC, SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
+                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
                    "USD", current_time - 2700, 0.0, 0.92, 0.7, true, true, false);
         
         AddNewsItem("Reuters - Oil Price Movement", 
                    "Oil prices fluctuate amid supply concerns and demand forecasts", 
-                   NEWS_COMMODITIES, SOURCE_REUTERS, SENTIMENT_NEGATIVE, NEWS_IMPACT_MEDIUM, 
+                   NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, SENTIMENT_NEGATIVE, NEWS_IMPACT_MEDIUM, 
                    "OIL", current_time - 3600, -0.1, 0.89, 0.6, true, true, false);
     }
     
@@ -1673,7 +1672,7 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CNewsProcessor* g_news_processor = NULL;
+CNewsProcessor* g_news_processor = NULL;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalNewsProcessor(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {
@@ -1701,8 +1700,12 @@ SentimentAnalysis GetCurrentSentiment() {
     return g_news_processor != NULL ? g_news_processor.GetCurrentSentiment() : SentimentAnalysis{};
 }
 
-TradingImpact[] GetTradingImpacts() {
-    return g_news_processor != NULL ? g_news_processor.GetTradingImpacts() : TradingImpact{};
+void GetTradingImpacts(TradingImpact &out_impacts[]) {
+    if(g_news_processor != NULL) {
+        out_impacts = g_news_processor.GetTradingImpacts();
+    } else {
+        ArrayResize(out_impacts, 0);
+    }
 }
 
 string GetNewsProcessorReport() {

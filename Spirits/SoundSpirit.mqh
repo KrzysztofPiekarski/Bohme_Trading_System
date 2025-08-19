@@ -1,6 +1,9 @@
 ﻿
 // Kompletna implementacja Ducha Dźwięku - Harmony & Cycle Analysis
 #include <Math\Alglib\ap.mqh>
+#include "../AI/AIEnums.mqh"
+
+// Używamy ENUM_HARMONY_STATE z AIEnums.mqh
 
 // Brakujące definicje klas
 class CSpectralAnalysisNet {
@@ -75,7 +78,8 @@ void InitializePlanetaryCycles() {
     // Initialize planetary cycle tracking
 }
 
-double GetHarmonicResonance() {
+// Global helper renamed to avoid conflict with member method
+double GetHarmonicResonanceHelper() {
     // Placeholder implementation
     return 40.0 + (MathRand() % 60); // 40-100
 }
@@ -88,14 +92,6 @@ enum ENUM_CYCLE_TYPE {
     CYCLE_SEASONAL,        // Cykle sezonowe
     CYCLE_FIBONACCI,       // Cykle Fibonacciego
     CYCLE_PLANETARY        // Cykle planetarne (eksperymentalne)
-};
-
-enum ENUM_HARMONY_STATE {
-    HARMONY_CHAOTIC,       // Chaos - brak harmonii
-    HARMONY_EMERGING,      // Wyłaniająca się harmonia
-    HARMONY_BALANCED,      // Zrównoważona harmonia
-    HARMONY_RESONANT,      // Rezonansowa harmonia
-    HARMONY_TRANSCENDENT   // Transcendentna harmonia
 };
 
 struct SCycle {
@@ -142,6 +138,10 @@ private:
     double DetectFibonacciTimeHarmonics();
     bool ValidateCycle(SCycle &cycle);
     
+    // Private update helpers
+    void UpdateHarmonicAnalysis();
+    void UpdatePlanetaryCycles();
+    
 public:
     SoundSpiritAI();
     ~SoundSpiritAI();
@@ -165,7 +165,8 @@ public:
     
     // Cycle analysis
     void DetectAllCycles();
-    SCycle[] GetActiveCycles();
+    // Return active cycles via out-parameter to avoid nonstandard array return
+    void GetActiveCycles(SCycle &out_cycles[], int &out_count);
     double GetCycleAlignment();
     double PredictNextTurn(ENUM_CYCLE_TYPE type);
     
@@ -545,15 +546,12 @@ double SoundSpiritAI::GetNextCyclePhase(ENUM_CYCLE_TYPE type) {
     return 0.0; // No cycle of this type found
 }
 
-SCycle[] SoundSpiritAI::GetActiveCycles() {
-    SCycle active_cycles[];
-    ArrayResize(active_cycles, m_cycle_count);
-    
+void SoundSpiritAI::GetActiveCycles(SCycle &out_cycles[], int &out_count) {
+    out_count = m_cycle_count;
+    ArrayResize(out_cycles, m_cycle_count);
     for(int i = 0; i < m_cycle_count; i++) {
-        active_cycles[i] = m_detected_cycles[i];
+        out_cycles[i] = m_detected_cycles[i];
     }
-    
-    return active_cycles;
 }
 
 double SoundSpiritAI::GetCycleAlignment() {

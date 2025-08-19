@@ -5,16 +5,10 @@
 #include "Spirits/FireSpirit.mqh"
 #include "Spirits/LightSpirit.mqh"
 #include "Spirits/SoundSpirit.mqh"
+#include "Core/TradeTypes.mqh"
 #include "Spirits/BodySpirit.mqh"
 
-// Brakujące definicje enum
-enum ENUM_TRADE_ACTION {
-    ACTION_NONE,        // Brak akcji
-    ACTION_BUY,         // Kupno
-    ACTION_SELL,        // Sprzedaż
-    ACTION_HOLD,        // Trzymanie
-    ACTION_CLOSE        // Zamknięcie
-};
+// ENUM_TRADE_ACTION przeniesiony do Core/TradeTypes.mqh
 
 enum ENUM_SYSTEM_STATE {
     SYSTEM_DORMANT,        // System uśpiony
@@ -76,13 +70,7 @@ struct SCycle {
     datetime next_peak;
 };
 
-struct STradeExecution {
-    ENUM_TRADE_ACTION action;
-    double price;
-    double volume;
-    datetime execution_time;
-    string comment;
-};
+// STradeExecution przeniesiony do Core/TradeTypes.mqh
 
 struct SMarketState {
     // Stan każdego ducha

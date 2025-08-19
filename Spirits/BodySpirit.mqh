@@ -1,5 +1,11 @@
 // Kompletna implementacja Ducha Ciała - Execution & Position Management
 #include <Trade\Trade.mqh>
+#include "../Core/TradeTypes.mqh" // ENUM_TRADE_ACTION, STradeExecution
+
+// Forward declarations for helper classes used as pointers
+class CMarketConditionsAnalyzer;
+class CRiskCalculator;
+class CSlippagePredictor;
 
 enum ENUM_EXECUTION_QUALITY {
     EXECUTION_POOR,        // Słaba jakość wykonania
@@ -43,6 +49,7 @@ struct SPositionManagement {
     bool needs_adjustment;     // Czy potrzebuje dostosowania
 };
 
+// Główna klasa BodySpirit
 class BodySpirit {
 private:
     // Trade object
@@ -79,6 +86,8 @@ private:
     double EstimateSlippage(double volume, double volatility);
     bool ValidateExecutionConditions();
     void UpdatePerformanceMetrics(double execution_quality);
+    void ApplyTrailingStop(ulong ticket, double current_price, double open_price);
+    double CalculateExecutionReadiness();
     
 public:
     BodySpirit();
@@ -87,32 +96,24 @@ public:
     // Main public methods
     double GetExecutionQuality();
     double CalculateOptimalSize(double signal_strength, double stop_distance);
-    STradeExecution OptimizeExecution(STradeExecution signal);
-    bool ExecuteTrade(STradeExecution execution);
+    STradeExecution OptimizeExecution(const STradeExecution &signal);
+    bool ExecuteTrade(const STradeExecution &execution);
     void ManageOpenPositions();
     void UpdateRiskParameters();
+    // Position management accessors
+    SPositionManagement GetPositionInfo();
+    bool AdjustPosition(double new_size, double new_stop);
+    void ClosePosition(string reason);
+    double GetAverageExecutionQuality();
+    double GetAverageSlippage();
+    double GetWinRate();
+    string GeneratePerformanceReport();
     
     // Risk management
     double GetCurrentRisk();
     double GetMaxRisk();
     ENUM_RISK_STATE GetRiskState();
     bool CanTakeNewPosition();
-    
-    // Position management
-    SPositionManagement GetPositionInfo();
-    bool AdjustPosition(double new_size, double new_stop);
-    void ClosePosition(string reason);
-    
-    // Performance analysis
-    double GetAverageExecutionQuality();
-    double GetAverageSlippage();
-    double GetWinRate();
-    string GeneratePerformanceReport();
-    
-    // System compatibility methods
-    bool Initialize();
-    void UpdatePositionData();
-    double CalculateExecutionReadiness();
 };
 
 // Brakujące klasy pomocnicze
@@ -159,8 +160,8 @@ public:
 BodySpirit::BodySpirit() {
     // Initialize trade object
     m_trade = new CTrade();
-    m_trade.SetDeviationInPoints(10); // 1 pip deviation
-    m_trade.SetTypeFilling(ORDER_FILLING_FOK);
+    m_trade->SetDeviationInPoints(10); // 1 pip deviation
+    m_trade->SetTypeFilling(ORDER_FILLING_FOK);
     
     // Initialize risk parameters
     m_max_risk_per_trade = 2.0; // 2% per trade
@@ -189,9 +190,9 @@ double BodySpirit::GetExecutionQuality() {
     // Multi-factor execution quality assessment
     
     // 1. Market conditions (30%)
-    double market_volatility = m_market_analyzer.GetMarketVolatility();
-    double spread = m_market_analyzer.GetSpread();
-    double liquidity = m_market_analyzer.GetLiquidity();
+    double market_volatility = m_market_analyzer->GetMarketVolatility();
+    double spread = m_market_analyzer->GetSpread();
+    double liquidity = m_market_analyzer->GetLiquidity();
     
     double market_quality = (100.0 - market_volatility) * 0.4 + 
                            (100.0 - spread * 10) * 0.3 + 
@@ -262,7 +263,7 @@ double BodySpirit::CalculateOptimalSize(double signal_strength, double stop_dist
 }
 
 // Optymalizacja wykonania transakcji
-STradeExecution BodySpirit::OptimizeExecution(STradeExecution signal) {
+STradeExecution BodySpirit::OptimizeExecution(const STradeExecution &signal) {
     STradeExecution optimized = signal;
     
     // Check execution conditions
@@ -273,8 +274,8 @@ STradeExecution BodySpirit::OptimizeExecution(STradeExecution signal) {
     }
     
     // Optimize entry price based on market conditions
-    double spread = m_market_analyzer.GetSpread();
-    double volatility = m_market_analyzer.GetMarketVolatility();
+    double spread = m_market_analyzer->GetSpread();
+    double volatility = m_market_analyzer->GetMarketVolatility();
     
     if(optimized.action == ACTION_BUY) {
         optimized.price = Ask + spread * 0.5; // Add half spread
@@ -289,7 +290,7 @@ STradeExecution BodySpirit::OptimizeExecution(STradeExecution signal) {
     optimized.volume = CalculateOptimalSize(signal_strength, stop_distance);
     
     // Predict and account for slippage
-    double predicted_slippage = m_slippage_predictor.PredictSlippage(optimized.volume, volatility);
+    double predicted_slippage = m_slippage_predictor->PredictSlippage(optimized.volume, volatility);
     optimized.price += (optimized.action == ACTION_BUY) ? predicted_slippage : -predicted_slippage;
     
     // Set execution quality
@@ -300,7 +301,7 @@ STradeExecution BodySpirit::OptimizeExecution(STradeExecution signal) {
 }
 
 // Wykonanie transakcji
-bool BodySpirit::ExecuteTrade(STradeExecution execution) {
+bool BodySpirit::ExecuteTrade(const STradeExecution &execution) {
     // Final validation
     if(!CanTakeNewPosition()) {
         Print("❌ Nie można otworzyć nowej pozycji - przekroczone limity ryzyka");
@@ -310,11 +311,11 @@ bool BodySpirit::ExecuteTrade(STradeExecution execution) {
     // Execute trade
     bool success = false;
     if(execution.action == ACTION_BUY) {
-        success = m_trade.Buy(execution.volume, Symbol(), execution.price, 
+        success = m_trade->Buy(execution.volume, Symbol(), execution.price, 
                              execution.stop_loss, execution.take_profit, execution.comment);
     }
     else if(execution.action == ACTION_SELL) {
-        success = m_trade.Sell(execution.volume, Symbol(), execution.price, 
+        success = m_trade->Sell(execution.volume, Symbol(), execution.price, 
                               execution.stop_loss, execution.take_profit, execution.comment);
     }
     
@@ -324,8 +325,8 @@ bool BodySpirit::ExecuteTrade(STradeExecution execution) {
         UpdatePerformanceMetrics(execution_quality);
         
         // Update risk tracking
-        double position_risk = m_risk_calculator.CalculatePositionRisk(execution.volume, 
-                                                                      MathAbs(execution.price - execution.stop_loss));
+        double position_risk = m_risk_calculator->CalculatePositionRisk(execution.volume, 
+                                                                       MathAbs(execution.price - execution.stop_loss));
         m_current_daily_risk += position_risk;
         
         Print("✅ Transakcja wykonana pomyślnie przez Ducha Ciała");
@@ -335,7 +336,7 @@ bool BodySpirit::ExecuteTrade(STradeExecution execution) {
         Print("🎯 Take Profit: ", execution.take_profit);
     }
     else {
-        Print("❌ Błąd wykonania transakcji: ", m_trade.ResultRetcodeDescription());
+        Print("❌ Błąd wykonania transakcji: ", m_trade->ResultRetcodeDescription());
     }
     
     return success;
@@ -356,8 +357,8 @@ void BodySpirit::ManageOpenPositions() {
                 double unrealized_pnl = PositionGetDouble(POSITION_PROFIT);
                 
                 // Update position info
-                m_position_info.current_risk = m_risk_calculator.CalculatePositionRisk(volume, 
-                                                                                      MathAbs(current_price - stop_loss));
+                m_position_info.current_risk = m_risk_calculator->CalculatePositionRisk(volume, 
+                                                                                       MathAbs(current_price - stop_loss));
                 m_position_info.position_size = volume;
                 m_position_info.unrealized_pnl = unrealized_pnl;
                 
@@ -400,7 +401,7 @@ void BodySpirit::UpdateRiskParameters() {
     }
     
     // Update risk parameters based on market conditions
-    double market_volatility = m_market_analyzer.GetMarketVolatility();
+    double market_volatility = m_market_analyzer->GetMarketVolatility();
     
     // Adjust risk based on volatility
     if(market_volatility > 70) {
@@ -439,7 +440,7 @@ bool BodySpirit::CanTakeNewPosition() {
     }
     
     // Check market conditions
-    double market_quality = m_market_analyzer.GetLiquidity();
+    double market_quality = m_market_analyzer->GetLiquidity();
     if(market_quality < 30) {
         return false; // Low liquidity
     }
@@ -467,7 +468,7 @@ void BodySpirit::ClosePosition(string reason) {
     for(int i = PositionsTotal() - 1; i >= 0; i--) {
         if(PositionSelectByTicket(PositionGetTicket(i))) {
             if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
-                m_trade.PositionClose(PositionGetTicket(i));
+                m_trade->PositionClose(PositionGetTicket(i));
                 Print("🔒 Pozycja zamknięta: ", reason);
             }
         }
@@ -517,16 +518,16 @@ double BodySpirit::CalculateRiskRewardRatio(double entry, double stop, double ta
 }
 
 double BodySpirit::EstimateSlippage(double volume, double volatility) {
-    return m_slippage_predictor.PredictSlippage(volume, volatility);
+    return m_slippage_predictor->PredictSlippage(volume, volatility);
 }
 
 bool BodySpirit::ValidateExecutionConditions() {
     // Check spread
-    double spread = m_market_analyzer.GetSpread();
+    double spread = m_market_analyzer->GetSpread();
     if(spread > 5.0) return false; // Spread too high
     
     // Check liquidity
-    double liquidity = m_market_analyzer.GetLiquidity();
+    double liquidity = m_market_analyzer->GetLiquidity();
     if(liquidity < 30.0) return false; // Low liquidity
     
     // Check execution quality
@@ -557,13 +558,13 @@ void BodySpirit::ApplyTrailingStop(ulong ticket, double current_price, double op
     if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) {
         double new_stop = current_price - trailing_distance * Point();
         if(new_stop > PositionGetDouble(POSITION_SL)) {
-            m_trade.PositionModify(ticket, new_stop, PositionGetDouble(POSITION_TP));
+            m_trade->PositionModify(ticket, new_stop, PositionGetDouble(POSITION_TP));
         }
     }
     else {
         double new_stop = current_price + trailing_distance * Point();
         if(new_stop < PositionGetDouble(POSITION_SL) || PositionGetDouble(POSITION_SL) == 0) {
-            m_trade.PositionModify(ticket, new_stop, PositionGetDouble(POSITION_TP));
+            m_trade->PositionModify(ticket, new_stop, PositionGetDouble(POSITION_TP));
         }
     }
 }
@@ -579,88 +580,7 @@ string EnumToString(ENUM_RISK_STATE state) {
     }
 }
 
-// System compatibility methods
-bool BodySpirit::Initialize() {
-    LogInfo(LOG_COMPONENT_BODY, "Inicjalizacja Body Spirit", "Rozpoczęcie inicjalizacji");
-    
-    // Initialize trade object
-    if(!m_trade.SetExpertMagicNumber(g_config.magic_number)) {
-        LogError(LOG_COMPONENT_BODY, "Błąd ustawienia magic number", "Nie można ustawić magic number");
-        return false;
-    }
-    
-    // Initialize AI components
-    if(m_position_manager != NULL) {
-        if(!m_position_manager.Initialize()) {
-            LogError(LOG_COMPONENT_BODY, "Błąd inicjalizacji position manager", "Nie można zainicjalizować position manager");
-            return false;
-        }
-    }
-    
-    if(m_risk_manager != NULL) {
-        if(!m_risk_manager.Initialize()) {
-            LogError(LOG_COMPONENT_BODY, "Błąd inicjalizacji risk manager", "Nie można zainicjalizować risk manager");
-            return false;
-        }
-    }
-    
-    if(m_execution_optimizer != NULL) {
-        if(!m_execution_optimizer.Initialize()) {
-            LogError(LOG_COMPONENT_BODY, "Błąd inicjalizacji execution optimizer", "Nie można zainicjalizować execution optimizer");
-            return false;
-        }
-    }
-    
-    LogInfo(LOG_COMPONENT_BODY, "Body Spirit zainicjalizowany", "Zarządzanie pozycjami i ryzykiem gotowe");
-    return true;
-}
-
-void BodySpirit::UpdatePositionData() {
-    // Update position data
-    UpdatePositionHistory();
-    
-    // Update AI components
-    if(m_position_manager != NULL) {
-        m_position_manager.UpdatePositionData();
-    }
-    
-    if(m_risk_manager != NULL) {
-        m_risk_manager.UpdateRiskData();
-    }
-    
-    if(m_execution_optimizer != NULL) {
-        m_execution_optimizer.UpdateExecutionData();
-    }
-    
-    // Manage positions
-    ManagePositions();
-}
-
-// System compatibility methods
-double BodySpirit::GetExecutionQuality() {
-    // Calculate execution quality based on various factors
-    double quality = 0.0;
-    
-    // Position management quality (30%)
-    double position_quality = 0.0;
-    if(m_positions_count > 0) {
-        position_quality = (double)m_profitable_positions / m_positions_count * 100.0;
-    }
-    quality += 0.3 * position_quality;
-    
-    // Risk management quality (30%)
-    double risk_quality = 0.0;
-    if(IsRiskAcceptable()) {
-        risk_quality = 100.0 - GetRiskLevel();
-    }
-    quality += 0.3 * risk_quality;
-    
-    // Execution readiness (40%)
-    double readiness = CalculateExecutionReadiness();
-    quality += 0.4 * readiness;
-    
-    return MathMax(0.0, MathMin(100.0, quality));
-}
+// Usunięto niespójne metody integracyjne (Initialize/UpdatePositionData) i zdublowaną wersję GetExecutionQuality()
 
 double BodySpirit::CalculateExecutionReadiness() {
     // Calculate execution readiness based on market conditions
@@ -685,12 +605,14 @@ double BodySpirit::CalculateExecutionReadiness() {
     else if(spread < avg_spread * 0.5) readiness += 10.0; // Low spread increases readiness
     
     // Position count factor
-    if(m_positions_count >= 5) readiness -= 20.0; // Too many positions
-    else if(m_positions_count == 0) readiness += 10.0; // No positions, ready to trade
+    int positions_count = PositionsTotal();
+    if(positions_count >= 5) readiness -= 20.0; // Too many positions
+    else if(positions_count == 0) readiness += 10.0; // No positions, ready to trade
     
     // Risk level factor
-    if(GetRiskLevel() > 70.0) readiness -= 30.0; // High risk reduces readiness
-    else if(GetRiskLevel() < 30.0) readiness += 15.0; // Low risk increases readiness
+    double risk_level = (m_max_daily_risk > 0.0) ? (m_current_daily_risk / m_max_daily_risk * 100.0) : 0.0;
+    if(risk_level > 70.0) readiness -= 30.0; // High risk reduces readiness
+    else if(risk_level < 30.0) readiness += 15.0; // Low risk increases readiness
     
     return MathMax(0.0, MathMin(100.0, readiness));
 }

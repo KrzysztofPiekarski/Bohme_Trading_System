@@ -679,21 +679,19 @@ public:
         return m_next_event_time;
     }
     
-    EconomicEvent[] GetUpcomingEvents(int hours = 24) {
+    void GetUpcomingEvents(EconomicEvent &out_events[], int hours = 24) {
         UpdateCalendar();
-        EconomicEvent upcoming[];
+        ArrayResize(out_events, 0);
         datetime current_time = TimeCurrent();
         datetime end_time = current_time + (hours * 3600);
         
         for(int i = 0; i < ArraySize(m_events); i++) {
             if(m_events[i].event_time >= current_time && m_events[i].event_time <= end_time) {
-                int size = ArraySize(upcoming);
-                ArrayResize(upcoming, size + 1);
-                upcoming[size] = m_events[i];
+                int size = ArraySize(out_events);
+                ArrayResize(out_events, size + 1);
+                out_events[size] = m_events[i];
             }
         }
-        
-        return upcoming;
     }
     
     EventStrategy GetStrategyForEvent(int event_id) {
@@ -753,7 +751,8 @@ public:
     }
     
     string GetUpcomingEventsReport(int hours = 24) {
-        EconomicEvent upcoming[] = GetUpcomingEvents(hours);
+        EconomicEvent upcoming[];
+        GetUpcomingEvents(upcoming, hours);
         string report = "=== NADCHODZĄCE WYDARZENIA (" + IntegerToString(hours) + "h) ===\n";
         
         if(ArraySize(upcoming) == 0) {
@@ -1296,7 +1295,7 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CEconomicCalendar* g_economic_calendar = NULL;
+CEconomicCalendar* g_economic_calendar = NULL;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalEconomicCalendar(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

@@ -12,6 +12,13 @@
 
 // === ENUMERACJE ===
 
+// Kierunek trendu (spójny z resztą systemu)
+enum ENUM_TREND_DIRECTION {
+    TREND_DOWN,
+    TREND_SIDEWAYS,
+    TREND_UP
+};
+
 // Typy źródeł danych rynkowych
 enum ENUM_MARKET_DATA_SOURCE {
     MARKET_SOURCE_MQL5,            // Dane z MQL5
@@ -1045,7 +1052,7 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CDataManager* g_data_manager = NULL;
+CDataManager* g_data_manager = NULL;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalDataManager(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

@@ -4,46 +4,52 @@
 #include "../AI/AIEnums.mqh"
 #include "../AI/AdvancedAI.mqh"
 
-// === BRAKUJĄCE KLASY AI ===
+// Sprawdzamy czy klasy nie są już zdefiniowane
+#ifndef CCONVOLUTIONALNET_DEFINED
+#define CCONVOLUTIONALNET_DEFINED
 
-// Convolutional Neural Network
-class CConvolutionalNet {
+// Convolutional Neural Network - lokalna definicja aby uniknąć konfliktu
+class CFireConvNet {
 private:
     int m_input_size;
     int m_output_size;
     double m_weights[50][5];  // Simplified weights
     
 public:
-    CConvolutionalNet(int inputs, int outputs) {
-        m_input_size = inputs;
-        m_output_size = outputs;
-        
+    CFireConvNet() {
+        m_input_size = 10;
+        m_output_size = 5;
+        Initialize();
+    }
+    
+    bool Initialize() { 
         // Initialize weights randomly
-        for(int i = 0; i < inputs; i++) {
-            for(int j = 0; j < outputs; j++) {
+        for(int i = 0; i < 50; i++) {
+            for(int j = 0; j < 5; j++) {
                 m_weights[i][j] = (MathRand() % 1000) / 1000.0 - 0.5;
             }
         }
+        return true; 
     }
     
-    bool Initialize() { return true; }
-    
     double Predict(double &inputs[]) {
-        if(ArraySize(inputs) != m_input_size) return 0.0;
+        if(ArraySize(inputs) == 0) return 0.0;
         
         double outputs[5];
         ArrayInitialize(outputs, 0.0);
         
+        int input_count = MathMin(ArraySize(inputs), 50);
+        
         // Simple forward pass
-        for(int i = 0; i < m_input_size; i++) {
-            for(int j = 0; j < m_output_size; j++) {
+        for(int i = 0; i < input_count; i++) {
+            for(int j = 0; j < 5; j++) {
                 outputs[j] += inputs[i] * m_weights[i][j];
             }
         }
         
         // Return highest output
         double max_output = outputs[0];
-        for(int i = 1; i < m_output_size; i++) {
+        for(int i = 1; i < 5; i++) {
             if(outputs[i] > max_output) max_output = outputs[i];
         }
         
@@ -51,8 +57,10 @@ public:
     }
 };
 
-// LSTM Network (lokalna uproszczona wersja, aby uniknąć konfliktu nazw)
-class CLocalLSTMNetwork {
+#endif
+
+// LSTM Network - lokalna definicja aby uniknąć konfliktu nazw
+class CFireLSTMNetwork {
 private:
     int m_lookback;
     int m_hidden_size;
@@ -60,28 +68,31 @@ private:
     double m_weights[64][64];  // Simplified LSTM weights
     
 public:
-    CLocalLSTMNetwork(int lookback, int hidden, int output) {
-        m_lookback = lookback;
-        m_hidden_size = hidden;
-        m_output_size = output;
-        
+    CFireLSTMNetwork() {
+        m_lookback = 20;
+        m_hidden_size = 32;
+        m_output_size = 1;
+        Initialize();
+    }
+    
+    bool Initialize() {
         // Initialize weights
-        for(int i = 0; i < hidden; i++) {
-            for(int j = 0; j < hidden; j++) {
+        for(int i = 0; i < 64; i++) {
+            for(int j = 0; j < 64; j++) {
                 m_weights[i][j] = (MathRand() % 1000) / 1000.0 - 0.5;
             }
         }
+        return true;
     }
     
-    bool Initialize() { return true; }
-    
     double Predict(double &sequence[]) {
-        if(ArraySize(sequence) != m_lookback) return 0.0;
+        if(ArraySize(sequence) == 0) return 0.0;
         
         // Simple LSTM-like prediction
         double hidden_state = 0.0;
+        int seq_size = ArraySize(sequence);
         
-        for(int i = 0; i < m_lookback; i++) {
+        for(int i = 0; i < seq_size; i++) {
             hidden_state = MathTanh(sequence[i] + hidden_state * 0.8);
         }
         
@@ -89,21 +100,210 @@ public:
     }
 };
 
-enum ENUM_VOLATILITY_REGIME {
-    VOLATILITY_LOW,         // Niska volatilność
-    VOLATILITY_NORMAL,      // Normalna volatilność  
-    VOLATILITY_HIGH,        // Wysoka volatilność
-    VOLATILITY_EXTREME,     // Ekstremalna volatilność
-    VOLATILITY_TRANSITION   // Przejście między reżimami
+// Sprawdzamy czy enum nie są już zdefiniowane
+#ifndef ENUM_VOLATILITY_REGIME_FIRE
+#define ENUM_VOLATILITY_REGIME_FIRE
+enum ENUM_FIRE_VOLATILITY_REGIME {
+    FIRE_VOLATILITY_LOW,         // Niska volatilność
+    FIRE_VOLATILITY_NORMAL,      // Normalna volatilność  
+    FIRE_VOLATILITY_HIGH,        // Wysoka volatilność
+    FIRE_VOLATILITY_EXTREME,     // Ekstremalna volatilność
+    FIRE_VOLATILITY_TRANSITION   // Przejście między reżimami
+};
+#endif
+
+#ifndef ENUM_ENERGY_STATE_FIRE
+#define ENUM_ENERGY_STATE_FIRE
+enum ENUM_FIRE_ENERGY_STATE {
+    FIRE_ENERGY_DORMANT,         // Uśpiona energia
+    FIRE_ENERGY_BUILDING,        // Budowanie energii
+    FIRE_ENERGY_ACTIVE,          // Aktywna energia
+    FIRE_ENERGY_EXPLOSIVE,       // Wybuchowa energia
+    FIRE_ENERGY_EXHAUSTED        // Wyczerpana energia
+};
+#endif
+
+// Struktury danych dla Fire Spirit
+struct SVolatilityData {
+    double current_volatility;
+    double avg_volatility;
+    double volatility_percentile;
+    ENUM_FIRE_VOLATILITY_REGIME regime;
+    datetime last_regime_change;
+    double regime_stability;
 };
 
-enum ENUM_ENERGY_STATE {
-    ENERGY_DORMANT,         // Uśpiona energia
-    ENERGY_BUILDING,        // Budowanie energii
-    ENERGY_ACTIVE,          // Aktywna energia
-    ENERGY_EXPLOSIVE,       // Wybuchowa energia
-    ENERGY_EXHAUSTED        // Wyczerpana energia
+struct SEnergyData {
+    double energy_level;           // 0-100
+    double energy_momentum;        // -100 to +100
+    double energy_acceleration;    // Rate of change in momentum
+    ENUM_FIRE_ENERGY_STATE state;
+    datetime last_state_change;
+    double state_confidence;
 };
+
+struct SVolatilityBreakout {
+    bool is_imminent;
+    double probability;
+    double expected_magnitude;
+    datetime expected_time;
+    string trigger_description;
+};
+
+// Główna klasa Fire Spirit
+class CFireSpirit {
+private:
+    CFireConvNet*    m_volatility_net;
+    CFireLSTMNetwork* m_energy_net;
+    
+    // Parametry konfiguracyjne
+    int              m_volatility_period;
+    int              m_energy_period;
+    double           m_volatility_threshold;
+    double           m_energy_threshold;
+    
+    // Dane robocze
+    SVolatilityData  m_volatility_data;
+    SEnergyData      m_energy_data;
+    
+    // Metody prywatne
+    double CalculateCurrentVolatility();
+    double CalculateEnergyLevel();
+    ENUM_FIRE_VOLATILITY_REGIME DetermineVolatilityRegime(double volatility);
+    ENUM_FIRE_ENERGY_STATE DetermineEnergyState(double energy);
+    
+public:
+    CFireSpirit();
+    ~CFireSpirit();
+    
+    bool Initialize();
+    void UpdateData();
+    
+    // Główne metody analizy
+    SVolatilityData GetVolatilityAnalysis();
+    SEnergyData GetEnergyAnalysis();
+    SVolatilityBreakout PredictVolatilityBreakout();
+    
+    // Metody pomocnicze
+    double GetVolatilityScore();
+    double GetEnergyScore();
+    double GetCombinedFireScore();
+    
+    // Ustawienia
+    void SetVolatilityPeriod(int period) { m_volatility_period = period; }
+    void SetEnergyPeriod(int period) { m_energy_period = period; }
+    void SetVolatilityThreshold(double threshold) { m_volatility_threshold = threshold; }
+    void SetEnergyThreshold(double threshold) { m_energy_threshold = threshold; }
+};
+
+// Implementacja konstruktora
+CFireSpirit::CFireSpirit() {
+    m_volatility_net = new CFireConvNet();
+    m_energy_net = new CFireLSTMNetwork();
+    
+    m_volatility_period = 14;
+    m_energy_period = 20;
+    m_volatility_threshold = 0.7;
+    m_energy_threshold = 0.6;
+    
+    // Inicjalizacja struktur
+    ZeroMemory(m_volatility_data);
+    ZeroMemory(m_energy_data);
+}
+
+// Implementacja destruktora
+CFireSpirit::~CFireSpirit() {
+    if(m_volatility_net != NULL) {
+        delete m_volatility_net;
+        m_volatility_net = NULL;
+    }
+    if(m_energy_net != NULL) {
+        delete m_energy_net;
+        m_energy_net = NULL;
+    }
+}
+
+// Implementacja inicjalizacji
+bool CFireSpirit::Initialize() {
+    if(m_volatility_net == NULL || m_energy_net == NULL) return false;
+    
+    if(!m_volatility_net.Initialize()) return false;
+    if(!m_energy_net.Initialize()) return false;
+    
+    return true;
+}
+
+// Implementacja aktualizacji danych
+void CFireSpirit::UpdateData() {
+    // Aktualizacja danych volatilności
+    m_volatility_data.current_volatility = CalculateCurrentVolatility();
+    m_volatility_data.regime = DetermineVolatilityRegime(m_volatility_data.current_volatility);
+    
+    // Aktualizacja danych energii
+    m_energy_data.energy_level = CalculateEnergyLevel();
+    m_energy_data.state = DetermineEnergyState(m_energy_data.energy_level);
+}
+
+// Implementacje metod prywatnych
+double CFireSpirit::CalculateCurrentVolatility() {
+    // Placeholder implementation
+    return 50.0 + (MathRand() % 50); // 50-100
+}
+
+double CFireSpirit::CalculateEnergyLevel() {
+    // Placeholder implementation
+    return 30.0 + (MathRand() % 70); // 30-100
+}
+
+ENUM_FIRE_VOLATILITY_REGIME CFireSpirit::DetermineVolatilityRegime(double volatility) {
+    if(volatility < 30) return FIRE_VOLATILITY_LOW;
+    else if(volatility < 60) return FIRE_VOLATILITY_NORMAL;
+    else if(volatility < 85) return FIRE_VOLATILITY_HIGH;
+    else return FIRE_VOLATILITY_EXTREME;
+}
+
+ENUM_FIRE_ENERGY_STATE CFireSpirit::DetermineEnergyState(double energy) {
+    if(energy < 20) return FIRE_ENERGY_DORMANT;
+    else if(energy < 40) return FIRE_ENERGY_BUILDING;
+    else if(energy < 70) return FIRE_ENERGY_ACTIVE;
+    else if(energy < 90) return FIRE_ENERGY_EXPLOSIVE;
+    else return FIRE_ENERGY_EXHAUSTED;
+}
+
+// Implementacje metod publicznych
+SVolatilityData CFireSpirit::GetVolatilityAnalysis() {
+    return m_volatility_data;
+}
+
+SEnergyData CFireSpirit::GetEnergyAnalysis() {
+    return m_energy_data;
+}
+
+SVolatilityBreakout CFireSpirit::PredictVolatilityBreakout() {
+    SVolatilityBreakout breakout;
+    ZeroMemory(breakout);
+    
+    // Placeholder prediction
+    breakout.is_imminent = (m_volatility_data.current_volatility > 70);
+    breakout.probability = m_volatility_data.current_volatility / 100.0;
+    breakout.expected_magnitude = 50.0 + (MathRand() % 50);
+    breakout.expected_time = TimeCurrent() + 3600; // 1 hour from now
+    breakout.trigger_description = "High volatility regime detected";
+    
+    return breakout;
+}
+
+double CFireSpirit::GetVolatilityScore() {
+    return m_volatility_data.current_volatility;
+}
+
+double CFireSpirit::GetEnergyScore() {
+    return m_energy_data.energy_level;
+}
+
+double CFireSpirit::GetCombinedFireScore() {
+    return (GetVolatilityScore() + GetEnergyScore()) / 2.0;
+}
 
 // === ZAAWANSOWANA IMPLEMENTACJA FIRE SPIRIT AI ===
 
@@ -116,6 +316,7 @@ private:
     CConvolutionalNet* m_regime_detector;
     
     // LSTM for volatility forecasting  
+    class CLocalLSTMNetwork; // forward declaration to satisfy pointer
     CLocalLSTMNetwork* m_volatility_lstm;
     
     // Energy measurement buffers
@@ -168,6 +369,7 @@ public:
     double GetEnergyExhaustionProbability();
     double GetVolatilityBreakoutProbability();
     void UpdateVolatilityModels();
+    void UpdateVolatilityModels_Legacy();
     double GetAdaptiveVolatilityBands();
     
     // System compatibility methods
@@ -328,9 +530,9 @@ double FireSpiritAI::GetFireIntensity() {
     return MathMax(0.0, MathMin(100.0, intensity));
 }
 
-// Aktualizacja modeli zmienności
+// Aktualizacja modeli zmienności (wersja 1)
 void FireSpiritAI::UpdateVolatilityModels() {
-    // Aktualizuj zaawansowane AI
+    // Aktualizuj zaawansowane AI (zachowane z pierwszej wersji)
     if(m_advanced_ai != NULL) {
         double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
         double current_volume = iVolume(Symbol(), PERIOD_CURRENT, 0);
@@ -857,8 +1059,8 @@ double FireSpiritAI::GetVolatilityBreakoutProbability() {
     }
 }
 
-// Update Volatility Models
-void FireSpiritAI::UpdateVolatilityModels() {
+// Update Volatility Models (wersja 2) — scalona do jednej implementacji powyżej
+void FireSpiritAI::UpdateVolatilityModels_Legacy() {
     // Update volatility history
     double current_vol = CalculateRealizedVolatility();
     

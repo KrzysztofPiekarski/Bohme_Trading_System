@@ -1,31 +1,16 @@
 ﻿// Kompletna implementacja Ducha Światła - Signal Clarity & Pattern Recognition
 #include <Graphics\Graphic.mqh>
 #include "../Utils/LoggingSystem.mqh"
+#include "../AI/AIEnums.mqh"
 
-// Brakujące definicje enum
+// Sprawdzamy czy enum nie są już zdefiniowane - usunięte dublowanie
+#ifndef ENUM_LEVEL_TYPE_DEFINED
+#define ENUM_LEVEL_TYPE_DEFINED
 enum ENUM_LEVEL_TYPE {
     LEVEL_SUPPORT,      // Poziom wsparcia
     LEVEL_RESISTANCE    // Poziom oporu
 };
-
-enum ENUM_SIGNAL_QUALITY {
-    SIGNAL_NOISE,           // Szum rynkowy
-    SIGNAL_WEAK,           // Słaby sygnał
-    SIGNAL_MODERATE,       // Umiarkowany sygnał
-    SIGNAL_STRONG,         // Silny sygnał
-    SIGNAL_CRYSTAL_CLEAR   // Krystalicznie czysty sygnał
-};
-
-enum ENUM_PATTERN_TYPE {
-    PATTERN_NONE,
-    PATTERN_TRIANGLE,
-    PATTERN_RECTANGLE,
-    PATTERN_HEAD_SHOULDERS,
-    PATTERN_DOUBLE_TOP_BOTTOM,
-    PATTERN_FLAG_PENNANT,
-    PATTERN_WEDGE,
-    PATTERN_CUP_HANDLE
-};
+#endif
 
 // Structure definitions - PRZENIESIONE PRZED KLASY
 struct SSignalData {
@@ -63,7 +48,8 @@ public:
     }
     bool Initialize() { return true; }
     void UpdateData() {}
-    void Recognize(double &matrix[][4], double &probabilities[]) {
+    // W MQL przekazujemy 1D tablicę i obliczamy indeksy OHLC ręcznie
+    void Recognize(double &matrix[], double &probabilities[]) {
         // Placeholder implementation
         ArrayResize(probabilities, 8);
         for(int i = 0; i < 8; i++) {
@@ -122,7 +108,7 @@ public:
     }
 };
 
-// Brakujące funkcje pomocnicze
+// Poprawiona składnia parametrów - usunięto błędne nawiasy kwadratowe
 void PrepareTransformerInputs(double &inputs[], double technical, double pattern, 
                              double level, double fractal, double snr, double convergence) {
     ArrayResize(inputs, 64);
@@ -144,7 +130,9 @@ double ValidateMultiTimeframeAlignment() {
     return 0.7 + (MathRand() % 30) / 100.0; // 0.7-1.0
 }
 
-void PrepareOHLCMatrix(double &matrix[][4], int bars) {
+// Przygotowanie macierzy OHLC jako spłaszczonej tablicy [bars*4]
+void PrepareOHLCMatrix(double &matrix[], int bars) {
+    ArrayResize(matrix, bars * 4);
     
     double opens[], highs[], lows[], closes[];
     if(CopyOpen(Symbol(), PERIOD_CURRENT, 0, bars, opens) == bars &&
@@ -153,10 +141,10 @@ void PrepareOHLCMatrix(double &matrix[][4], int bars) {
        CopyClose(Symbol(), PERIOD_CURRENT, 0, bars, closes) == bars) {
         
         for(int i = 0; i < bars; i++) {
-            matrix[i][0] = opens[i];
-            matrix[i][1] = highs[i];
-            matrix[i][2] = lows[i];
-            matrix[i][3] = closes[i];
+            matrix[i * 4 + 0] = opens[i];   // Open
+            matrix[i * 4 + 1] = highs[i];   // High  
+            matrix[i * 4 + 2] = lows[i];    // Low
+            matrix[i * 4 + 3] = closes[i];  // Close
         }
     }
 }
@@ -166,7 +154,8 @@ double CalculatePatternCompletion(int pattern_type) {
     return 60.0 + (MathRand() % 40); // 60-100
 }
 
-double AssessPatternQuality(int pattern_type, double &matrix[][4]) {
+// Ocena jakości wzorca dla spłaszczonej macierzy [N*4]
+double AssessPatternQuality(int pattern_type, double &matrix[]) {
     // Placeholder implementation
     return 50.0 + (MathRand() % 50); // 50-100
 }
@@ -355,7 +344,7 @@ double LightSpirit::CalculateTechnicalSignalClarity() {
 // Pattern Clarity using CNN
 double LightSpirit::CalculatePatternClarity() {
     // Prepare price data for CNN
-    double price_matrix[50][4]; // OHLC data
+    double price_matrix[]; // OHLC data
     PrepareOHLCMatrix(price_matrix, 50);
     
     // CNN pattern recognition
@@ -465,7 +454,7 @@ double LightSpirit::CalculateSignalStrength() {
 }
 
 ENUM_PATTERN_TYPE LightSpirit::GetDominantPattern() {
-    double price_matrix[50][4];
+    double price_matrix[];
     PrepareOHLCMatrix(price_matrix, 50);
     
     double pattern_probabilities[8];
@@ -489,7 +478,7 @@ double LightSpirit::GetPatternConfidence() {
     ENUM_PATTERN_TYPE pattern = GetDominantPattern();
     if(pattern == PATTERN_NONE) return 0.0;
     
-    double price_matrix[50][4];
+    double price_matrix[];
     PrepareOHLCMatrix(price_matrix, 50);
     
     double completion = CalculatePatternCompletion((int)pattern);
