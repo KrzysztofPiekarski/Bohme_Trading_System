@@ -1,12 +1,12 @@
 // Główny kontroler systemu Böhmego - Master Consciousness
-#include "Spirits/HerbeSpirit.mqh"
-#include "Spirits/SweetnessSpirit.mqh" 
-#include "Spirits/BitternessSpirit.mqh"
-#include "Spirits/FireSpirit.mqh"
-#include "Spirits/LightSpirit.mqh"
-#include "Spirits/SoundSpirit.mqh"
-#include "Core/TradeTypes.mqh"
-#include "Spirits/BodySpirit.mqh"
+#include "../Spirits/HerbeSpirit.mqh"
+#include "../Spirits/SweetnessSpirit.mqh" 
+#include "../Spirits/BitternessSpirit.mqh"
+#include "../Spirits/FireSpirit.mqh"
+#include "../Spirits/LightSpirit.mqh"
+#include "../Spirits/SoundSpirit.mqh"
+#include "TradeTypes.mqh"
+#include "../Spirits/BodySpirit.mqh"
 
 // ENUM_TRADE_ACTION przeniesiony do Core/TradeTypes.mqh
 

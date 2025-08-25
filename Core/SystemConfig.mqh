@@ -5,7 +5,7 @@
 // KONFIGURACJA SYSTEMU BÖHMEGO
 // ========================================
 
-#include "Utils/LoggingSystem.mqh"
+#include "../Utils/LoggingSystem.mqh"
 
 // Globalne ustawienia systemu
 struct SystemConfig {

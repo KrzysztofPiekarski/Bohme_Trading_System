@@ -110,6 +110,27 @@ struct SRiskManagement {
     string risk_warnings;           // Ostrzeżenia ryzyka
 };
 
+// Struktura statystyk pozycji
+struct PositionStatistics {
+    int total_positions;            // Całkowita liczba pozycji
+    int long_positions;             // Pozycje długie
+    int short_positions;            // Pozycje krótkie
+    double total_position_value;    // Całkowita wartość pozycji
+    double unrealized_pnl;          // Niezrealizowany P&L
+    double realized_pnl;            // Zrealizowany P&L
+    double total_pnl;               // Całkowity P&L
+    double average_position_size;   // Średni rozmiar pozycji
+    double max_position_size;       // Maksymalny rozmiar pozycji
+    double min_position_size;       // Minimalny rozmiar pozycji
+    double win_rate;                // Wskaźnik wygranych
+    double avg_win;                 // Średni zysk
+    double avg_loss;                // Średnia strata
+    double profit_factor;           // Współczynnik zysku
+    int winning_positions;          // Wygrane pozycje
+    int losing_positions;           // Przegrane pozycje
+    datetime last_position_time;    // Czas ostatniej pozycji
+};
+
 // === KLASA POSITION MANAGER ===
 
 class CPositionManager {
@@ -137,10 +158,10 @@ private:
     bool m_initialized;
     int m_max_positions;
     
-    // Callback functions
-    void (*m_on_position_opened)(SPosition&);
-    void (*m_on_position_closed)(SPosition&);
-    void (*m_on_risk_alert)(string);
+    // Callback functions - MQL5 doesn't support function pointers, using flags instead
+    bool m_has_position_opened_callback;
+    bool m_has_position_closed_callback;
+    bool m_has_risk_alert_callback;
     
 public:
     // === KONSTRUKTOR I DESTRUKTOR ===
@@ -152,9 +173,9 @@ public:
         m_max_positions = 50;
         
         // Resetowanie callbacków
-        m_on_position_opened = NULL;
-        m_on_position_closed = NULL;
-        m_on_risk_alert = NULL;
+        m_has_position_opened_callback = false;
+        m_has_position_closed_callback = false;
+        m_has_risk_alert_callback = false;
         
         // Inicjalizacja zarządzania ryzykiem
         InitializeRiskManagement();
@@ -1065,8 +1086,11 @@ public:
         return SPosition{};
     }
     
-    SPosition GetPositions()[] {
-        return m_positions;
+    void GetPositions(SPosition &positions[]) {
+        ArrayResize(positions, ArraySize(m_positions));
+        for(int i = 0; i < ArraySize(m_positions); i++) {
+            positions[i] = m_positions[i];
+        }
     }
     
     SMarketEstimators GetMarketEstimators() {
@@ -1082,16 +1106,16 @@ public:
     }
     
     // === SETTERY CALLBACKÓW ===
-    void SetOnPositionOpened(void (*callback)(SPosition&)) {
-        m_on_position_opened = callback;
+    void SetOnPositionOpened(bool enable) {
+        m_has_position_opened_callback = enable;
     }
     
-    void SetOnPositionClosed(void (*callback)(SPosition&)) {
-        m_on_position_closed = callback;
+    void SetOnPositionClosed(bool enable) {
+        m_has_position_closed_callback = enable;
     }
     
-    void SetOnRiskAlert(void (*callback)(string)) {
-        m_on_risk_alert = callback;
+    void SetOnRiskAlert(bool enable) {
+        m_has_risk_alert_callback = enable;
     }
     
     // === FUNKCJE POMOCNICZE ===
@@ -1218,8 +1242,12 @@ SPosition GetPosition(ulong ticket) {
     return g_position_manager != NULL ? g_position_manager.GetPosition(ticket) : SPosition{};
 }
 
-SPosition GetPositions()[] {
-    return g_position_manager != NULL ? g_position_manager.GetPositions() : SPosition{};
+void GetPositions(SPosition &positions[]) {
+    if(g_position_manager != NULL) {
+        g_position_manager.GetPositions(positions);
+    } else {
+        ArrayResize(positions, 0);
+    }
 }
 
 SMarketEstimators GetMarketEstimators() {

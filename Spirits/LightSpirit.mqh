@@ -373,7 +373,7 @@ double LightSpirit::CalculatePatternClarity() {
 
 // Support/Resistance Level Clarity
 double LightSpirit::CalculateLevelClarity() {
-    SLevel levels[];
+    SLevel &levels[];
     m_sr_analyzer->GetKeyLevels(levels);
     
     double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
@@ -496,7 +496,7 @@ double LightSpirit::GetPatternCompletionProbability() {
 }
 
 double LightSpirit::GetSupportResistanceStrength() {
-    SLevel levels[];
+    SLevel &levels[];
     m_sr_analyzer->GetKeyLevels(levels);
     
     double total_strength = 0.0;
@@ -518,7 +518,7 @@ void LightSpirit::GetKeyLevels(SLevel &levels[]) {
 
 double LightSpirit::GetLevelBreakoutProbability() {
     double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
-    SLevel levels[];
+    SLevel &levels[];
     m_sr_analyzer->GetKeyLevels(levels);
     
     double nearest_level_distance = 100.0;

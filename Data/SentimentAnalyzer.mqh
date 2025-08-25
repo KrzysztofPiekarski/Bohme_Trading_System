@@ -42,17 +42,17 @@ enum ENUM_EMOTION_INTENSITY {
 };
 
 // Źródła sentymentu
-enum ENUM_SENTIMENT_SOURCE {
-    SENTIMENT_SOURCE_NEWS,         // Wiadomości
-    SENTIMENT_SOURCE_SOCIAL_MEDIA, // Media społecznościowe
-    SENTIMENT_SOURCE_ANALYST,      // Analitycy
-    SENTIMENT_SOURCE_RETAIL,       // Inwestorzy detaliczni
-    SENTIMENT_SOURCE_INSTITUTIONAL, // Inwestorzy instytucjonalni
-    SENTIMENT_SOURCE_TECHNICAL,    // Analiza techniczna
-    SENTIMENT_SOURCE_FUNDAMENTAL,  // Analiza fundamentalna
-    SENTIMENT_SOURCE_MARKET_DATA,  // Dane rynkowe
-    SENTIMENT_SOURCE_ECONOMIC,     // Dane ekonomiczne
-    SENTIMENT_SOURCE_CUSTOM        // Źródło niestandardowe
+enum ENUM_SENTIMENT_CATEGORY {
+    SENTIMENT_CATEGORY_NEWS,         // Wiadomości
+    SENTIMENT_CATEGORY_SOCIAL_MEDIA, // Media społecznościowe
+    SENTIMENT_CATEGORY_ANALYST,      // Analitycy
+    SENTIMENT_CATEGORY_RETAIL,       // Inwestorzy detaliczni
+    SENTIMENT_CATEGORY_INSTITUTIONAL, // Inwestorzy instytucjonalni
+    SENTIMENT_CATEGORY_TECHNICAL,    // Analiza techniczna
+    SENTIMENT_CATEGORY_FUNDAMENTAL,  // Analiza fundamentalna
+    SENTIMENT_CATEGORY_MARKET_DATA,  // Dane rynkowe
+    SENTIMENT_CATEGORY_ECONOMIC,     // Dane ekonomiczne
+    SENTIMENT_CATEGORY_CUSTOM        // Źródło niestandardowe
 };
 
 // === ŹRÓDŁA DANYCH ===
@@ -1649,7 +1649,7 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CSentimentAnalyzer* g_sentiment_analyzer = NULL;
+CSentimentAnalyzer* g_sentiment_analyzer = NULL;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalSentimentAnalyzer(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

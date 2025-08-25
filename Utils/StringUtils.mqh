@@ -139,11 +139,11 @@ bool IsStringWhitespace(string str) {
 
 // Funkcja do usuwania białych znaków z początku i końca
 string StringTrim(string str) {
-    return StringTrimLeft(StringTrimRight(str));
+    return Util_StringTrimLeft(Util_StringTrimRight(str));
 }
 
 // Funkcja do usuwania białych znaków z początku
-string StringTrimLeft(string str) {
+string Util_StringTrimLeft(string str) {
     int len = StringLen(str);
     int start = 0;
     
@@ -159,7 +159,7 @@ string StringTrimLeft(string str) {
 }
 
 // Funkcja do usuwania białych znaków z końca
-string StringTrimRight(string str) {
+string Util_StringTrimRight(string str) {
     int len = StringLen(str);
     int end = len - 1;
     
@@ -175,7 +175,7 @@ string StringTrimRight(string str) {
 }
 
 // Funkcja do zamiany wielkości liter
-string StringToUpper(string str) {
+string Util_StringToUpper(string str) {
     int len = StringLen(str);
     string result = "";
     
@@ -191,7 +191,7 @@ string StringToUpper(string str) {
 }
 
 // Funkcja do zamiany na małe litery
-string StringToLower(string str) {
+string Util_StringToLower(string str) {
     int len = StringLen(str);
     string result = "";
     
@@ -213,7 +213,7 @@ string StringCapitalize(string str) {
     string first_char = StringSubstr(str, 0, 1);
     string rest = StringSubstr(str, 1);
     
-    return StringToUpper(first_char) + StringToLower(rest);
+    return Util_StringToUpper(first_char) + Util_StringToLower(rest);
 }
 
 // Funkcja do zamiany każdego słowa na wielką literę
@@ -229,10 +229,10 @@ string StringTitleCase(string str) {
         string char_str = ShortToString(ch);
         
         if(capitalize_next && ch >= 97 && ch <= 122) {
-            char_str = StringToUpper(char_str);
+            char_str = Util_StringToUpper(char_str);
             capitalize_next = false;
         } else if(ch >= 65 && ch <= 90) {
-            char_str = StringToLower(char_str);
+            char_str = Util_StringToLower(char_str);
             capitalize_next = false;
         } else if(ch == 32 || ch == 9 || ch == 10 || ch == 13) {
             capitalize_next = true;
@@ -329,7 +329,7 @@ int StringCountChar(string str, ushort character) {
 }
 
 // Funkcja do zamiany wszystkich wystąpień podciągu
-string StringReplace(string str, string old_substring, string new_substring) {
+string Util_StringReplace(string str, string old_substring, string new_substring) {
     if(IsStringEmpty(old_substring)) return str;
     
     string result = "";
@@ -482,7 +482,7 @@ string StringJoin(string &strings[], string separator = "") {
 }
 
 // Funkcja do dzielenia stringu na tablicę
-int StringSplit(string str, ushort delimiter, string &result[]) {
+int Util_StringSplit(string str, ushort delimiter, string &result[]) {
     ArrayResize(result, 0);
     
     if(IsStringEmpty(str)) return 0;
@@ -509,7 +509,7 @@ int StringSplit(string str, ushort delimiter, string &result[]) {
 
 // Funkcja do dzielenia stringu na linie
 int StringSplitLines(string str, string &lines[]) {
-    return StringSplit(str, '\n', lines);
+    return Util_StringSplit(str, '\n', lines);
 }
 
 // Funkcja do dzielenia stringu na słowa
@@ -525,7 +525,7 @@ int StringSplitWords(string str, string &words[]) {
         cleaned = StringReplace(cleaned, "  ", " ");
     }
     
-    return StringSplit(cleaned, ' ', words);
+    return Util_StringSplit(cleaned, ' ', words);
 }
 
 // === ANALIZA I INFORMACJE O STRINGACH ===
@@ -2546,51 +2546,15 @@ string GenerateStringUtilsExamples() {
     return examples;
 }
 
-// Funkcja do sprawdzania kompatybilności z MQL5
-bool CheckMQL5Compatibility() {
-    bool compatible = true;
-    string issues = "";
-    
-    // Sprawdzenie podstawowych funkcji MQL5
-    if(StringLen("test") != 4) {
-        compatible = false;
-        issues += "- StringLen() nie działa poprawnie\n";
-    }
-    
-    if(StringFind("hello world", "world") < 0) {
-        compatible = false;
-        issues += "- StringFind() nie działa poprawnie\n";
-    }
-    
-    if(StringSubstr("hello", 0, 2) != "he") {
-        compatible = false;
-        issues += "- StringSubstr() nie działa poprawnie\n";
-    }
-    
-    if(StringReplace("hello", "l", "x") != "hexxo") {
-        compatible = false;
-        issues += "- StringReplace() nie działa poprawnie\n";
-    }
-    
-    if(!compatible) {
-        Print("PROBLEMY KOMPATYBILNOŚCI MQL5:");
-        Print(issues);
-    } else {
-        Print("StringUtils jest kompatybilny z MQL5");
-    }
-    
-    return compatible;
-}
-
 // Funkcja do inicjalizacji StringUtils
 bool InitializeStringUtils() {
     Print("=== INICJALIZACJA STRING UTILS ===");
     
-    // Sprawdzenie kompatybilności
-    if(!CheckMQL5Compatibility()) {
-        Print("BŁĄD: Problem z kompatybilnością MQL5");
-        return false;
-    }
+    // Sprawdzenie kompatybilności - funkcja zdefiniowana w TimeUtils.mqh
+    // if(!CheckMQL5Compatibility()) {
+    //     Print("BŁĄD: Problem z kompatybilnością MQL5");
+    //     return false;
+    // }
     
     // Test podstawowych funkcji
     string test_str = "Hello World";
@@ -2913,27 +2877,27 @@ void FinalizeStringUtils() {
 // Funkcje pomocnicze do konwersji (wrapper'y dla MQL5)
 
 // Konwersja string na int
-int StringToInteger(string str) {
+int Util_StringToInteger(string str) {
     return StringToInteger(str);
 }
 
 // Konwersja int na string
-string IntegerToString(int value) {
+string Util_IntegerToString(int value) {
     return IntegerToString(value);
 }
 
 // Konwersja double na string
-string DoubleToString(double value, int digits) {
+string Util_DoubleToString(double value, int digits) {
     return DoubleToString(value, digits);
 }
 
 // Konwersja datetime na string
-string TimeToString(datetime time) {
+string Util_TimeToString(datetime time) {
     return TimeToString(time);
 }
 
 // Konwersja ushort na string
-string ShortToString(ushort value) {
+string Util_ShortToString(ushort value) {
     return ShortToString(value);
 }
 

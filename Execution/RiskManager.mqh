@@ -100,6 +100,26 @@ struct SRiskAnalysis {
     datetime risk_calculation_time; // Czas obliczenia ryzyka
 };
 
+// Struktura statystyk ryzyka
+struct RiskStatistics {
+    double current_risk;            // Obecne ryzyko
+    double max_risk;                // Maksymalne ryzyko
+    double risk_per_trade;          // Ryzyko na transakcję
+    double daily_risk;              // Ryzyko dzienne
+    double portfolio_risk;          // Ryzyko portfela
+    int open_positions;             // Otwarte pozycje
+    double total_exposure;          // Całkowita ekspozycja
+    double max_drawdown;            // Maksymalny drawdown
+    double current_drawdown;        // Obecny drawdown
+    double profit_factor;           // Współczynnik zysku
+    double win_rate;                // Wskaźnik wygranych
+    double avg_win;                 // Średni zysk
+    double avg_loss;                // Średnia strata
+    int total_trades;               // Całkowita liczba transakcji
+    int winning_trades;             // Wygrane transakcje
+    int losing_trades;              // Przegrane transakcje
+};
+
 // Struktura parametrów zarządzania ryzykiem
 struct SRiskParameters {
     // Limity ryzyka
@@ -199,11 +219,11 @@ private:
     bool m_trading_suspended;
     datetime m_suspension_time;
     
-    // Callback functions
-    void (*m_on_risk_alert)(SRiskAlert&);
-    void (*m_on_risk_action)(ENUM_RISK_ACTION, string);
-    void (*m_on_trading_suspended)(string);
-    void (*m_on_trading_resumed)(string);
+    // Callback functions - MQL5 doesn't support function pointers, using flags instead
+    bool m_has_risk_alert_callback;
+    bool m_has_risk_action_callback;
+    bool m_has_trading_suspended_callback;
+    bool m_has_trading_resumed_callback;
     
     // Metody prywatne - analiza ryzyka
     double CalculateMarketRisk();
@@ -225,8 +245,17 @@ private:
     void UpdateRiskAnalysis();
     void CheckRiskThresholds();
     void GenerateRiskAlerts();
+    void GenerateRiskAlert(ENUM_RISK_TYPE risk_type, ENUM_RISK_LEVEL risk_level, ENUM_RISK_ACTION recommended_action, string message);
     void ExecuteRiskActions();
     void UpdateRiskHistory();
+    
+    // Metody prywatne - akcje zarządzania ryzykiem
+    void ReducePositionSizes();
+    void CloseAllPositions();
+    void AddHedgingPositions();
+    void TightenStopLosses();
+    void SuspendTrading();
+    void EmergencyExit();
     
     // Metody prywatne - pomocnicze
     bool GetSymbolInfo();
@@ -249,8 +278,8 @@ public:
     void Update();
     SRiskAnalysis GetRiskAnalysis();
     SRiskParameters GetRiskParameters();
-    SRiskAlert GetActiveAlerts()[];
-    SRiskHistory GetRiskHistory()[];
+    void GetActiveAlerts(SRiskAlert &alerts[]);
+    void GetRiskHistory(SRiskHistory &history[]);
     
     // === ANALIZA RYZYKA ===
     double GetTotalRiskScore();
@@ -281,10 +310,10 @@ public:
     void ExportRiskHistory(string filename);
     
     // === SETTERY CALLBACKÓW ===
-    void SetOnRiskAlert(void (*callback)(SRiskAlert&));
-    void SetOnRiskAction(void (*callback)(ENUM_RISK_ACTION, string));
-    void SetOnTradingSuspended(void (*callback)(string));
-    void SetOnTradingResumed(void (*callback)(string));
+    void SetOnRiskAlert(bool enable);
+    void SetOnRiskAction(bool enable);
+    void SetOnTradingSuspended(bool enable);
+    void SetOnTradingResumed(bool enable);
 };
 
 // === IMPLEMENTACJA KONSTRUKTORA I DESTRUKTORA ===
@@ -299,10 +328,10 @@ CRiskManager::CRiskManager() {
     m_suspension_time = 0;
     
     // Resetowanie callbacków
-    m_on_risk_alert = NULL;
-    m_on_risk_action = NULL;
-    m_on_trading_suspended = NULL;
-    m_on_trading_resumed = NULL;
+    m_has_risk_alert_callback = false;
+    m_has_risk_action_callback = false;
+    m_has_trading_suspended_callback = false;
+    m_has_trading_resumed_callback = false;
     
     // Inicjalizacja parametrów ryzyka
     InitializeRiskParameters();
@@ -1079,12 +1108,18 @@ SRiskParameters CRiskManager::GetRiskParameters() {
     return m_risk_parameters;
 }
 
-SRiskAlert CRiskManager::GetActiveAlerts()[] {
-    return m_active_alerts;
+void CRiskManager::GetActiveAlerts(SRiskAlert &alerts[]) {
+    ArrayResize(alerts, ArraySize(m_active_alerts));
+    for(int i = 0; i < ArraySize(m_active_alerts); i++) {
+        alerts[i] = m_active_alerts[i];
+    }
 }
 
-SRiskHistory CRiskManager::GetRiskHistory()[] {
-    return m_risk_history;
+void CRiskManager::GetRiskHistory(SRiskHistory &history[]) {
+    ArrayResize(history, ArraySize(m_risk_history));
+    for(int i = 0; i < ArraySize(m_risk_history); i++) {
+        history[i] = m_risk_history[i];
+    }
 }
 
 // === METODY ANALIZY RYZYKA ===
@@ -1413,20 +1448,20 @@ void CRiskManager::EmergencyExit(string reason) {
 
 // === IMPLEMENTACJA CALLBACKÓW ===
 
-void CRiskManager::SetOnRiskAlert(void (*callback)(SRiskAlert&)) {
-    m_on_risk_alert = callback;
+void CRiskManager::SetOnRiskAlert(bool enable) {
+    m_has_risk_alert_callback = enable;
 }
 
-void CRiskManager::SetOnRiskAction(void (*callback)(ENUM_RISK_ACTION, string)) {
-    m_on_risk_action = callback;
+void CRiskManager::SetOnRiskAction(bool enable) {
+    m_has_risk_action_callback = enable;
 }
 
-void CRiskManager::SetOnTradingSuspended(void (*callback)(string)) {
-    m_on_trading_suspended = callback;
+void CRiskManager::SetOnTradingSuspended(bool enable) {
+    m_has_trading_suspended_callback = enable;
 }
 
-void CRiskManager::SetOnTradingResumed(void (*callback)(string)) {
-    m_on_trading_resumed = callback;
+void CRiskManager::SetOnTradingResumed(bool enable) {
+    m_has_trading_resumed_callback = enable;
 }
 
 // === GLOBALNA INSTANCJA ===

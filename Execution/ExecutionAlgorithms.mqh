@@ -104,6 +104,21 @@ struct ExecutionResult {
     string execution_log;                  // Log wykonania
 };
 
+// Struktura statystyk wykonania
+struct ExecutionStatistics {
+    int total_orders;                      // Całkowita liczba zleceń
+    int successful_orders;                 // Liczba pomyślnych zleceń
+    int failed_orders;                     // Liczba nieudanych zleceń
+    double success_rate;                   // Wskaźnik sukcesu (%)
+    double average_execution_time;         // Średni czas wykonania
+    double total_volume;                   // Całkowity wolumen
+    datetime last_order_time;              // Czas ostatniego zlecenia
+    string last_order_symbol;              // Symbol ostatniego zlecenia
+    double total_profit;                   // Całkowity zysk
+    double total_loss;                     // Całkowita strata
+    double net_pnl;                        // Netto PnL
+};
+
 // Struktura analizy rynku
 struct MarketAnalysis {
     double current_volatility;             // Aktualna zmienność
@@ -735,7 +750,7 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CExecutionAlgorithms* g_execution_algorithms = NULL;
+CExecutionAlgorithms* g_execution_algorithms = NULL;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalExecutionAlgorithms(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {
@@ -751,7 +766,7 @@ void ReleaseGlobalExecutionAlgorithms() {
     }
 }
 
-ExecutionResult ExecuteBuyOrder(double volume, double price = 0, ExecutionParameters params = {}) {
+ExecutionResult ExecuteBuyOrder(double volume, double price = 0, ExecutionParameters &params) {
     if(g_execution_algorithms != NULL) {
         if(params.algorithm == 0) {
             params = g_execution_algorithms.GetDefaultParameters();
@@ -761,12 +776,28 @@ ExecutionResult ExecuteBuyOrder(double volume, double price = 0, ExecutionParame
     return ExecutionResult{};
 }
 
-ExecutionResult ExecuteSellOrder(double volume, double price = 0, ExecutionParameters params = {}) {
+ExecutionResult ExecuteBuyOrder(double volume, double price = 0) {
+    if(g_execution_algorithms != NULL) {
+        ExecutionParameters default_params = g_execution_algorithms.GetDefaultParameters();
+        return g_execution_algorithms.ExecuteOrder(default_params, ORDER_TYPE_BUY, volume, price);
+    }
+    return ExecutionResult{};
+}
+
+ExecutionResult ExecuteSellOrder(double volume, double price = 0, ExecutionParameters &params) {
     if(g_execution_algorithms != NULL) {
         if(params.algorithm == 0) {
             params = g_execution_algorithms.GetDefaultParameters();
         }
         return g_execution_algorithms.ExecuteOrder(params, ORDER_TYPE_SELL, volume, price);
+    }
+    return ExecutionResult{};
+}
+
+ExecutionResult ExecuteSellOrder(double volume, double price = 0) {
+    if(g_execution_algorithms != NULL) {
+        ExecutionParameters default_params = g_execution_algorithms.GetDefaultParameters();
+        return g_execution_algorithms.ExecuteOrder(default_params, ORDER_TYPE_SELL, volume, price);
     }
     return ExecutionResult{};
 }

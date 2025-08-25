@@ -230,9 +230,9 @@ LightSpirit* g_light_spirit = NULL;
 FireSpiritAI* g_fire_spirit = NULL;
 BitternessSpirit* g_bitterness_spirit = NULL;
 BodySpirit* g_body_spirit = NULL;
-HerbeQualityAI* g_herbe_spirit = NULL;  // Changed from HerbeSpirit to HerbeQualityAI
-SentimentAI* g_sweetness_spirit = NULL; // Changed from SweetnessSpirit to SentimentAI
-SoundSpiritAI* g_sound_spirit = NULL;   // Changed from SoundSpirit to SoundSpiritAI
+HerbeQualityAI* g_herbe_spirit = NULL;
+SentimentAI* g_sweetness_spirit = NULL;
+SoundSpiritAI* g_sound_spirit = NULL;
 
 // Master Consciousness
 CMasterConsciousness* g_master_consciousness = NULL;
@@ -1594,6 +1594,21 @@ void UpdateGUI() {
 }
 
 //+------------------------------------------------------------------+
+//| Update Advanced GUI                                               |
+//+------------------------------------------------------------------+
+void UpdateAdvancedGUI() {
+    if(!g_gui_state.is_visible) return;
+    
+    // Update advanced GUI features
+    // This function can be extended with advanced GUI update features
+    // such as real-time charts, advanced controls, etc.
+    
+    // Update chart properties if needed
+    ChartSetInteger(0, CHART_SHOW_GRID, true);
+    ChartSetInteger(0, CHART_SHOW_VOLUMES, CHART_VOLUME_TICK);
+}
+
+//+------------------------------------------------------------------+
 //| Refresh GUI                                                       |
 //+------------------------------------------------------------------+
 void RefreshGUI() {
@@ -2186,6 +2201,18 @@ void CleanupGUI() {
     ArrayResize(g_test_results, 0);
     
     Print("✅ GUI wyczyszczone");
+}
+
+//+------------------------------------------------------------------+
+//| Cleanup Advanced GUI                                              |
+//+------------------------------------------------------------------+
+void CleanupAdvancedGUI() {
+    Print("🎨 Czyszczenie zaawansowanego GUI...");
+    
+    // Cleanup advanced GUI features
+    // This function can be extended with advanced GUI cleanup features
+    
+    Print("✅ Zaawansowane GUI wyczyszczone");
 }
 
 //+------------------------------------------------------------------+

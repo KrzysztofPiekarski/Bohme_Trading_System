@@ -88,8 +88,7 @@ enum ENUM_NEWS_DATA_SOURCE {
     NEWS_SOURCE_CUSTOM_API,        // Niestandardowe API
     NEWS_SOURCE_WEBSOCKET,         // WebSocket
     NEWS_SOURCE_EMAIL,             // Email
-    NEWS_SOURCE_SMS,               // SMS
-    NEWS_SOURCE_UNKNOWN            // Nieznane źródło
+    NEWS_SOURCE_SMS                // SMS
 };
 
 // Statusy danych wiadomości
@@ -908,9 +907,12 @@ public:
         return m_current_sentiment;
     }
     
-    TradingImpact[] GetTradingImpacts() {
+    void GetTradingImpacts(TradingImpact &out_impacts[]) {
         UpdateNewsProcessor();
-        return m_impacts;
+        ArrayResize(out_impacts, ArraySize(m_impacts));
+        for(int i = 0; i < ArraySize(m_impacts); i++) {
+            out_impacts[i] = m_impacts[i];
+        }
     }
     
     void GetRecentNews(NewsItem &out_recent[], int count = 10) {
@@ -1712,8 +1714,6 @@ string GetNewsProcessorReport() {
     return g_news_processor != NULL ? g_news_processor.GetStatusReport() : "News Processor nie zainicjalizowany";
 }
 
-string GetSentimentReport() {
-    return g_news_processor != NULL ? g_news_processor.GetSentimentReport() : "News Processor nie zainicjalizowany";
-}
+
 
 #endif // NEWS_PROCESSOR_H

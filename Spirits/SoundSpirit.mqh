@@ -170,9 +170,12 @@ public:
     double GetCycleAlignment();
     double PredictNextTurn(ENUM_CYCLE_TYPE type);
     
+    // Additional cycle analysis methods
+    bool AnalyzeCyclePeriod(double &prices[], int size, int period, SCycle &cycle);
+    SCycle GetDominantCycle();
+    double GetNextCyclePhase(ENUM_CYCLE_TYPE type);
+    
     // Harmonic analysis
-    double GetHarmonicResonance();
-    double GetPhaseAlignment();
     void UpdateCycleModels();
     
     // Fibonacci time analysis

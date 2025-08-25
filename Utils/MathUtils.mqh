@@ -2784,114 +2784,70 @@ string StringRepeat(string str, int count) {
 }
 
 // Funkcja do konwersji string na double
-double StringToDouble(string str) {
-    return StringToDouble(str);
-}
+double Util_StringToDouble(string str) { return StringToDouble(str); }
 
 // Funkcja do konwersji double na string z określoną precyzją
-string DoubleToString(double value, int digits) {
-    return DoubleToString(value, digits);
-}
+string Util_DoubleToString(double value, int digits) { return DoubleToString(value, digits); }
 
 // Funkcja do konwersji int na string
-string IntegerToString(int value) {
-    return IntegerToString(value);
-}
+string Util_IntegerToString(int value) { return IntegerToString(value); }
 
 // Funkcja do konwersji datetime na string
-string TimeToString(datetime time) {
-    return TimeToString(time);
-}
+string Util_TimeToString(datetime time) { return TimeToString(time); }
 
 // Funkcja do sprawdzania czy liczba jest prawidłowa
-bool MathIsValidNumber(double value) {
-    return MathIsValidNumber(value);
-}
+bool Util_MathIsValidNumber(double value) { return MathIsValidNumber(value); }
 
 // Funkcja do obliczania wartości bezwzględnej
-double MathAbs(double value) {
-    return MathAbs(value);
-}
+double Util_MathAbs(double value) { return MathAbs(value); }
 
 // Funkcja do obliczania pierwiastka kwadratowego
-double MathSqrt(double value) {
-    return MathSqrt(value);
-}
+double Util_MathSqrt(double value) { return MathSqrt(value); }
 
 // Funkcja do obliczania potęgi
-double MathPow(double base, double exponent) {
-    return MathPow(base, exponent);
-}
+double Util_MathPow(double base, double exponent) { return MathPow(base, exponent); }
 
 // Funkcja do obliczania logarytmu naturalnego
-double MathLog(double value) {
-    return MathLog(value);
-}
+double Util_MathLog(double value) { return MathLog(value); }
 
 // Funkcja do obliczania funkcji wykładniczej
-double MathExp(double value) {
-    return MathExp(value);
-}
+double Util_MathExp(double value) { return MathExp(value); }
 
 // Funkcja do obliczania funkcji sinus
-double MathSin(double value) {
-    return MathSin(value);
-}
+double Util_MathSin(double value) { return MathSin(value); }
 
 // Funkcja do obliczania funkcji cosinus
-double MathCos(double value) {
-    return MathCos(value);
-}
+double Util_MathCos(double value) { return MathCos(value); }
 
 // Funkcja do obliczania funkcji tangens
-double MathTan(double value) {
-    return MathTan(value);
-}
+double Util_MathTan(double value) { return MathTan(value); }
 
 // Funkcja do obliczania funkcji tangens hiperboliczny
-double MathTanh(double value) {
-    return MathTanh(value);
-}
+double Util_MathTanh(double value) { return MathTanh(value); }
 
 // Funkcja do obliczania funkcji arcus tangens
-double MathArctan(double value) {
-    return MathArctan(value);
-}
+double Util_MathArctan(double value) { return MathArctan(value); }
 
 // Funkcja do obliczania maksimum z dwóch wartości
-double MathMax(double value1, double value2) {
-    return MathMax(value1, value2);
-}
+double Util_MathMax(double value1, double value2) { return MathMax(value1, value2); }
 
 // Funkcja do obliczania minimum z dwóch wartości
-double MathMin(double value1, double value2) {
-    return MathMin(value1, value2);
-}
+double Util_MathMin(double value1, double value2) { return MathMin(value1, value2); }
 
 // Funkcja do zaokrąglania w górę
-double MathCeil(double value) {
-    return MathCeil(value);
-}
+double Util_MathCeil(double value) { return MathCeil(value); }
 
 // Funkcja do zaokrąglania w dół
-double MathFloor(double value) {
-    return MathFloor(value);
-}
+double Util_MathFloor(double value) { return MathFloor(value); }
 
 // Funkcja do zaokrąglania do najbliższej liczby całkowitej
-double MathRound(double value) {
-    return MathRound(value);
-}
+double Util_MathRound(double value) { return MathRound(value); }
 
 // Funkcja do generowania losowej liczby całkowitej
-int MathRand() {
-    return MathRand();
-}
+int Util_MathRand() { return MathRand(); }
 
 // Funkcja do ustawienia seed dla generatora liczb losowych
-void MathSrand(int seed) {
-    MathSrand(seed);
-}
+void Util_MathSrand(int seed) { MathSrand(seed); }
 
 // Stałe matematyczne
 #define M_PI 3.14159265358979323846
