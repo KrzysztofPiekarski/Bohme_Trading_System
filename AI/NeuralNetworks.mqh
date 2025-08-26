@@ -9,6 +9,11 @@
 
 #include "../Utils/LoggingSystem.mqh"
 
+// Definicje stałych systemowych
+#define NEURAL_NETWORK_VERSION "1.0.0"
+#define NEURAL_NETWORK_AUTHOR "Bohme Trading System"
+#define NEURAL_NETWORK_DESCRIPTION "Advanced Neural Networks for Algorithmic Trading"
+
 // Pomocnicze funkcje konwersji
 bool StringToBool(string value) {
     return (value == "true" || value == "1");
@@ -296,7 +301,7 @@ public:
     // Trening
     bool TrainModel();
     bool TrainEpoch();
-    bool TrainBatch(double &batch_data[][], double &batch_labels[]);
+    bool TrainBatch(double &batch_data[], double &batch_labels[]);
     bool Backpropagate(double &targets[]);
     bool UpdateWeights();
     bool ValidateModel();
@@ -459,7 +464,7 @@ bool CNeuralNetwork::LoadData(double &data[][], double &labels[]) {
     int total_samples = ArraySize(data);
     int features_count = 0;
     if(total_samples > 0) {
-        features_count = ArraySize(data[0]);
+        features_count = ArrayRange(data, 1);
     }
     
     if(total_samples != ArraySize(labels)) {
@@ -479,7 +484,7 @@ bool CNeuralNetwork::LoadData(double &data[][], double &labels[]) {
     // Kopiowanie danych treningowych (flattened)
     for(int i = 0; i < training_samples; i++) {
         for(int j = 0; j < features_count; j++) {
-            if(i < ArraySize(data) && j < ArraySize(data[i])) {
+            if(i < ArraySize(data) && j < features_count) {
                 int off = TrainingOffset(i, j);
                 if(off >= 0 && off < ArraySize(m_training_data)) {
                     m_training_data[off] = data[i][j];
@@ -494,7 +499,7 @@ bool CNeuralNetwork::LoadData(double &data[][], double &labels[]) {
     // Kopiowanie danych walidacyjnych (flattened)
     for(int i = 0; i < validation_samples; i++) {
         for(int j = 0; j < features_count; j++) {
-            if(training_samples + i < ArraySize(data) && j < ArraySize(data[training_samples + i])) {
+            if(training_samples + i < ArraySize(data) && j < features_count) {
                 int off = ValidationOffset(i, j);
                 if(off >= 0 && off < ArraySize(m_validation_data)) {
                     m_validation_data[off] = data[training_samples + i][j];
@@ -584,38 +589,29 @@ bool CNeuralNetwork::InitializeWeights(int layer_index) {
         return false;
     }
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
-    // Inicjalizacja macierzy wag
-    ArrayResize(layer.weights, input_size);
-    ArrayResize(layer.gradients, input_size);
-    ArrayResize(layer.momentum_weights, input_size);
-    ArrayResize(layer.velocity_weights, input_size);
-    ArrayResize(layer.cache_weights, input_size);
-    
-    for(int i = 0; i < input_size; i++) {
-        ArrayResize(layer.weights[i], output_size);
-        ArrayResize(layer.gradients[i], output_size);
-        ArrayResize(layer.momentum_weights[i], output_size);
-        ArrayResize(layer.velocity_weights[i], output_size);
-        ArrayResize(layer.cache_weights[i], output_size);
-    }
+    // Inicjalizacja macierzy wag jako spłaszczonych tablic 1D
+    ArrayResize(m_layers[layer_index].weights, input_size * output_size);
+    ArrayResize(m_layers[layer_index].gradients, input_size * output_size);
+    ArrayResize(m_layers[layer_index].momentum_weights, input_size * output_size);
+    ArrayResize(m_layers[layer_index].velocity_weights, input_size * output_size);
+    ArrayResize(m_layers[layer_index].cache_weights, input_size * output_size);
     
     // Inicjalizacja bias
-    ArrayResize(layer.bias, output_size);
-    ArrayResize(layer.bias_gradients, output_size);
-    ArrayResize(layer.momentum_bias, output_size);
-    ArrayResize(layer.velocity_bias, output_size);
-    ArrayResize(layer.cache_bias, output_size);
+    ArrayResize(m_layers[layer_index].bias, output_size);
+    ArrayResize(m_layers[layer_index].bias_gradients, output_size);
+    ArrayResize(m_layers[layer_index].momentum_bias, output_size);
+    ArrayResize(m_layers[layer_index].velocity_bias, output_size);
+    ArrayResize(m_layers[layer_index].cache_bias, output_size);
     
     // Inicjalizacja aktywacji i deltas
-    ArrayResize(layer.activations, output_size);
-    ArrayResize(layer.deltas, output_size);
+    ArrayResize(m_layers[layer_index].activations, output_size);
+    ArrayResize(m_layers[layer_index].deltas, output_size);
     
     // Inicjalizacja wag według wybranej metody
-    switch(layer.params.weight_init) {
+    switch(m_layers[layer_index].params.weight_init) {
         case WEIGHT_INIT_XAVIER:
             return InitializeXavier(layer_index);
         case WEIGHT_INIT_HE:
@@ -635,33 +631,34 @@ bool CNeuralNetwork::InitializeWeights(int layer_index) {
 bool CNeuralNetwork::InitializeXavier(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    // Direct access to m_layers[layer_index] instead of reference
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
     double scale = MathSqrt(2.0 / (input_size + output_size));
     
     // Inicjalizacja wag
     for(int i = 0; i < input_size; i++) {
         for(int j = 0; j < output_size; j++) {
-            layer.weights[i][j] = GenerateRandomDouble(-scale, scale);
-            layer.gradients[i][j] = 0.0;
-            layer.momentum_weights[i][j] = 0.0;
-            layer.velocity_weights[i][j] = 0.0;
-            layer.cache_weights[i][j] = 0.0;
+            int off = i * output_size + j;
+            m_layers[layer_index].weights[off] = GenerateRandomDouble(-scale, scale);
+            m_layers[layer_index].gradients[off] = 0.0;
+            m_layers[layer_index].momentum_weights[off] = 0.0;
+            m_layers[layer_index].velocity_weights[off] = 0.0;
+            m_layers[layer_index].cache_weights[off] = 0.0;
         }
     }
     
     // Inicjalizacja bias
     for(int j = 0; j < output_size; j++) {
-        layer.bias[j] = 0.0;
-        layer.bias_gradients[j] = 0.0;
-        layer.momentum_bias[j] = 0.0;
-        layer.velocity_bias[j] = 0.0;
-        layer.cache_bias[j] = 0.0;
+        m_layers[layer_index].bias[j] = 0.0;
+        m_layers[layer_index].bias_gradients[j] = 0.0;
+        m_layers[layer_index].momentum_bias[j] = 0.0;
+        m_layers[layer_index].velocity_bias[j] = 0.0;
+        m_layers[layer_index].cache_bias[j] = 0.0;
     }
     
-    layer.is_initialized = true;
+    m_layers[layer_index].is_initialized = true;
     return true;
 }
 
@@ -669,33 +666,34 @@ bool CNeuralNetwork::InitializeXavier(int layer_index) {
 bool CNeuralNetwork::InitializeHe(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    // Direct access to m_layers[layer_index] instead of reference
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
     double scale = MathSqrt(2.0 / input_size);
     
     // Inicjalizacja wag
     for(int i = 0; i < input_size; i++) {
         for(int j = 0; j < output_size; j++) {
-            layer.weights[i][j] = GenerateRandomDouble(-scale, scale);
-            layer.gradients[i][j] = 0.0;
-            layer.momentum_weights[i][j] = 0.0;
-            layer.velocity_weights[i][j] = 0.0;
-            layer.cache_weights[i][j] = 0.0;
+            int off = i * output_size + j;
+            m_layers[layer_index].weights[off] = GenerateRandomDouble(-scale, scale);
+            m_layers[layer_index].gradients[off] = 0.0;
+            m_layers[layer_index].momentum_weights[off] = 0.0;
+            m_layers[layer_index].velocity_weights[off] = 0.0;
+            m_layers[layer_index].cache_weights[off] = 0.0;
         }
     }
     
     // Inicjalizacja bias
     for(int j = 0; j < output_size; j++) {
-        layer.bias[j] = 0.0;
-        layer.bias_gradients[j] = 0.0;
-        layer.momentum_bias[j] = 0.0;
-        layer.velocity_bias[j] = 0.0;
-        layer.cache_bias[j] = 0.0;
+        m_layers[layer_index].bias[j] = 0.0;
+        m_layers[layer_index].bias_gradients[j] = 0.0;
+        m_layers[layer_index].momentum_bias[j] = 0.0;
+        m_layers[layer_index].velocity_bias[j] = 0.0;
+        m_layers[layer_index].cache_bias[j] = 0.0;
     }
     
-    layer.is_initialized = true;
+    m_layers[layer_index].is_initialized = true;
     return true;
 }
 
@@ -703,33 +701,34 @@ bool CNeuralNetwork::InitializeHe(int layer_index) {
 bool CNeuralNetwork::InitializeLeCun(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    // Direct access to m_layers[layer_index] instead of reference
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
     double scale = MathSqrt(1.0 / input_size);
     
     // Inicjalizacja wag
     for(int i = 0; i < input_size; i++) {
         for(int j = 0; j < output_size; j++) {
-            layer.weights[i][j] = GenerateRandomDouble(-scale, scale);
-            layer.gradients[i][j] = 0.0;
-            layer.momentum_weights[i][j] = 0.0;
-            layer.velocity_weights[i][j] = 0.0;
-            layer.cache_weights[i][j] = 0.0;
+            int off = i * output_size + j;
+            m_layers[layer_index].weights[off] = GenerateRandomDouble(-scale, scale);
+            m_layers[layer_index].gradients[off] = 0.0;
+            m_layers[layer_index].momentum_weights[off] = 0.0;
+            m_layers[layer_index].velocity_weights[off] = 0.0;
+            m_layers[layer_index].cache_weights[off] = 0.0;
         }
     }
     
     // Inicjalizacja bias
     for(int j = 0; j < output_size; j++) {
-        layer.bias[j] = 0.0;
-        layer.bias_gradients[j] = 0.0;
-        layer.momentum_bias[j] = 0.0;
-        layer.velocity_bias[j] = 0.0;
-        layer.cache_bias[j] = 0.0;
+        m_layers[layer_index].bias[j] = 0.0;
+        m_layers[layer_index].bias_gradients[j] = 0.0;
+        m_layers[layer_index].momentum_bias[j] = 0.0;
+        m_layers[layer_index].velocity_bias[j] = 0.0;
+        m_layers[layer_index].cache_bias[j] = 0.0;
     }
     
-    layer.is_initialized = true;
+    m_layers[layer_index].is_initialized = true;
     return true;
 }
 
@@ -737,33 +736,34 @@ bool CNeuralNetwork::InitializeLeCun(int layer_index) {
 bool CNeuralNetwork::InitializeOrthogonal(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    // Direct access to m_layers[layer_index] instead of reference
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
     // Uproszczona inicjalizacja ortogonalna
     double scale = MathSqrt(2.0 / (input_size + output_size));
     
     for(int i = 0; i < input_size; i++) {
         for(int j = 0; j < output_size; j++) {
-            layer.weights[i][j] = GenerateRandomDouble(-scale, scale);
-            layer.gradients[i][j] = 0.0;
-            layer.momentum_weights[i][j] = 0.0;
-            layer.velocity_weights[i][j] = 0.0;
-            layer.cache_weights[i][j] = 0.0;
+            int off = i * output_size + j;
+            m_layers[layer_index].weights[off] = GenerateRandomDouble(-scale, scale);
+            m_layers[layer_index].gradients[off] = 0.0;
+            m_layers[layer_index].momentum_weights[off] = 0.0;
+            m_layers[layer_index].velocity_weights[off] = 0.0;
+            m_layers[layer_index].cache_weights[off] = 0.0;
         }
     }
     
     // Inicjalizacja bias
     for(int j = 0; j < output_size; j++) {
-        layer.bias[j] = 0.0;
-        layer.bias_gradients[j] = 0.0;
-        layer.momentum_bias[j] = 0.0;
-        layer.velocity_bias[j] = 0.0;
-        layer.cache_bias[j] = 0.0;
+        m_layers[layer_index].bias[j] = 0.0;
+        m_layers[layer_index].bias_gradients[j] = 0.0;
+        m_layers[layer_index].momentum_bias[j] = 0.0;
+        m_layers[layer_index].velocity_bias[j] = 0.0;
+        m_layers[layer_index].cache_bias[j] = 0.0;
     }
     
-    layer.is_initialized = true;
+    m_layers[layer_index].is_initialized = true;
     return true;
 }
 
@@ -771,33 +771,34 @@ bool CNeuralNetwork::InitializeOrthogonal(int layer_index) {
 bool CNeuralNetwork::InitializeUniform(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    int input_size = layer.params.input_size;
-    int output_size = layer.params.output_size;
+    // Direct access to m_layers[layer_index] instead of reference
+    int input_size = m_layers[layer_index].params.input_size;
+    int output_size = m_layers[layer_index].params.output_size;
     
     double scale = MathSqrt(6.0 / (input_size + output_size));
     
     // Inicjalizacja wag
     for(int i = 0; i < input_size; i++) {
         for(int j = 0; j < output_size; j++) {
-            layer.weights[i][j] = GenerateRandomDouble(-scale, scale);
-            layer.gradients[i][j] = 0.0;
-            layer.momentum_weights[i][j] = 0.0;
-            layer.velocity_weights[i][j] = 0.0;
-            layer.cache_weights[i][j] = 0.0;
+            int off = i * output_size + j;
+            m_layers[layer_index].weights[off] = GenerateRandomDouble(-scale, scale);
+            m_layers[layer_index].gradients[off] = 0.0;
+            m_layers[layer_index].momentum_weights[off] = 0.0;
+            m_layers[layer_index].velocity_weights[off] = 0.0;
+            m_layers[layer_index].cache_weights[off] = 0.0;
         }
     }
     
     // Inicjalizacja bias
     for(int j = 0; j < output_size; j++) {
-        layer.bias[j] = 0.0;
-        layer.bias_gradients[j] = 0.0;
-        layer.momentum_bias[j] = 0.0;
-        layer.velocity_bias[j] = 0.0;
-        layer.cache_bias[j] = 0.0;
+        m_layers[layer_index].bias[j] = 0.0;
+        m_layers[layer_index].bias_gradients[j] = 0.0;
+        m_layers[layer_index].momentum_bias[j] = 0.0;
+        m_layers[layer_index].velocity_bias[j] = 0.0;
+        m_layers[layer_index].cache_bias[j] = 0.0;
     }
     
-    layer.is_initialized = true;
+    m_layers[layer_index].is_initialized = true;
     return true;
 }
 
@@ -898,76 +899,73 @@ double CNeuralNetwork::ForwardPass(double &input_data[]) {
     
     // Przejście przez wszystkie warstwy
     for(int layer = 0; layer < m_layers_count; layer++) {
-        SNeuralLayer &current_layer = m_layers[layer];
-        
         // Upewnij się, że bufory są zainicjalizowane
-        if(!current_layer.is_initialized) {
-            ArrayResize(current_layer.bias, current_layer.params.output_size);
-            ArrayResize(current_layer.activations, current_layer.params.output_size);
-            ArrayResize(current_layer.deltas, current_layer.params.output_size);
-            ArrayResize(current_layer.bias_gradients, current_layer.params.output_size);
-            ArrayResize(current_layer.momentum_bias, current_layer.params.output_size);
-            ArrayResize(current_layer.velocity_bias, current_layer.params.output_size);
-            ArrayResize(current_layer.cache_bias, current_layer.params.output_size);
+        if(!m_layers[layer].is_initialized) {
+            ArrayResize(m_layers[layer].bias, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].activations, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].deltas, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].bias_gradients, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].momentum_bias, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].velocity_bias, m_layers[layer].params.output_size);
+            ArrayResize(m_layers[layer].cache_bias, m_layers[layer].params.output_size);
 
-            int weight_len = current_layer.params.input_size * current_layer.params.output_size;
-            ArrayResize(current_layer.weights, weight_len);
-            ArrayResize(current_layer.gradients, weight_len);
-            ArrayResize(current_layer.momentum_weights, weight_len);
-            ArrayResize(current_layer.velocity_weights, weight_len);
-            ArrayResize(current_layer.cache_weights, weight_len);
+            int weight_len = m_layers[layer].params.input_size * m_layers[layer].params.output_size;
+            ArrayResize(m_layers[layer].weights, weight_len);
+            ArrayResize(m_layers[layer].gradients, weight_len);
+            ArrayResize(m_layers[layer].momentum_weights, weight_len);
+            ArrayResize(m_layers[layer].velocity_weights, weight_len);
+            ArrayResize(m_layers[layer].cache_weights, weight_len);
 
             // Inicjalizacja domyślna
-            for(int i = 0; i < current_layer.params.input_size; i++) {
-                for(int j = 0; j < current_layer.params.output_size; j++) {
-                    int off = i * current_layer.params.output_size + j;
-                    current_layer.weights[off] = 0.0;
-                    current_layer.gradients[off] = 0.0;
-                    current_layer.momentum_weights[off] = 0.0;
-                    current_layer.velocity_weights[off] = 0.0;
-                    current_layer.cache_weights[off] = 0.0;
+            for(int i = 0; i < m_layers[layer].params.input_size; i++) {
+                for(int j = 0; j < m_layers[layer].params.output_size; j++) {
+                    int off = i * m_layers[layer].params.output_size + j;
+                    m_layers[layer].weights[off] = 0.0;
+                    m_layers[layer].gradients[off] = 0.0;
+                    m_layers[layer].momentum_weights[off] = 0.0;
+                    m_layers[layer].velocity_weights[off] = 0.0;
+                    m_layers[layer].cache_weights[off] = 0.0;
                 }
             }
-            for(int j = 0; j < current_layer.params.output_size; j++) {
-                current_layer.bias[j] = 0.0;
-                current_layer.activations[j] = 0.0;
-                current_layer.deltas[j] = 0.0;
-                current_layer.bias_gradients[j] = 0.0;
-                current_layer.momentum_bias[j] = 0.0;
-                current_layer.velocity_bias[j] = 0.0;
-                current_layer.cache_bias[j] = 0.0;
+            for(int j = 0; j < m_layers[layer].params.output_size; j++) {
+                m_layers[layer].bias[j] = 0.0;
+                m_layers[layer].activations[j] = 0.0;
+                m_layers[layer].deltas[j] = 0.0;
+                m_layers[layer].bias_gradients[j] = 0.0;
+                m_layers[layer].momentum_bias[j] = 0.0;
+                m_layers[layer].velocity_bias[j] = 0.0;
+                m_layers[layer].cache_bias[j] = 0.0;
             }
-            current_layer.is_initialized = true;
+            m_layers[layer].is_initialized = true;
         }
 
         // Obliczenie wyjścia warstwy
-        for(int j = 0; j < current_layer.params.output_size; j++) {
-            double sum = current_layer.bias[j];
+        for(int j = 0; j < m_layers[layer].params.output_size; j++) {
+            double sum = m_layers[layer].bias[j];
             
-            for(int i = 0; i < current_layer.params.input_size; i++) {
+            for(int i = 0; i < m_layers[layer].params.input_size; i++) {
                 if(i < ArraySize(current_input)) {
-                    int off = i * current_layer.params.output_size + j;
-                    sum += current_layer.weights[off] * current_input[i];
+                    int off = i * m_layers[layer].params.output_size + j;
+                    sum += m_layers[layer].weights[off] * current_input[i];
                 }
             }
             
-            current_layer.activations[j] = sum;
+            m_layers[layer].activations[j] = sum;
         }
         
         // Zastosowanie funkcji aktywacji
-        ActivateArray(current_layer.activations, current_layer.params.activation);
+        ActivateArray(m_layers[layer].activations, m_layers[layer].params.activation);
         
         // Przygotowanie wejścia dla następnej warstwy
-            ArrayResize(current_input, current_layer.params.output_size);
-            for(int k = 0; k < current_layer.params.output_size; k++) {
-                current_input[k] = current_layer.activations[k];
+            ArrayResize(current_input, m_layers[layer].params.output_size);
+            for(int k = 0; k < m_layers[layer].params.output_size; k++) {
+                current_input[k] = m_layers[layer].activations[k];
             }
     }
     
     // Zwróć wyjście ostatniej warstwy
     if(m_layers_count > 0) {
-        SNeuralLayer &last_layer = m_layers[m_layers_count - 1];
-        return last_layer.activations[0]; // Uproszczone - zwraca pierwszy neuron
+        return m_layers[m_layers_count - 1].activations[0]; // Uproszczone - zwraca pierwszy neuron
     }
     
     return 0.0;
@@ -1321,16 +1319,15 @@ bool CNeuralNetwork::TrainEpoch() {
         int batch_size = batch_end - batch_start;
         
         // Przygotowanie batch
-        double batch_data[][];
+        double batch_data[];
         double batch_labels[];
-        ArrayResize(batch_data, batch_size);
+        ArrayResize(batch_data, batch_size * m_features_count);
         ArrayResize(batch_labels, batch_size);
         
         for(int i = 0; i < batch_size; i++) {
-            ArrayResize(batch_data[i], m_features_count);
             for(int j = 0; j < m_features_count; j++) {
                 int off = TrainingOffset(batch_start + i, j);
-                batch_data[i][j] = m_training_data[off];
+                batch_data[i * m_features_count + j] = m_training_data[off];
             }
             batch_labels[i] = m_training_labels[batch_start + i];
         }
@@ -1345,7 +1342,12 @@ bool CNeuralNetwork::TrainEpoch() {
         ArrayResize(batch_predictions, batch_size);
         
         for(int i = 0; i < batch_size; i++) {
-            batch_predictions[i] = ForwardPass(batch_data[i]);
+            double temp_input[];
+            ArrayResize(temp_input, m_features_count);
+            for(int j = 0; j < m_features_count; j++) {
+                temp_input[j] = batch_data[i * m_features_count + j];
+            }
+            batch_predictions[i] = ForwardPass(temp_input);
         }
         
         double batch_loss = CalculateLoss(batch_predictions, batch_labels);
@@ -1367,8 +1369,8 @@ bool CNeuralNetwork::TrainEpoch() {
 }
 
 // Trening batch
-bool CNeuralNetwork::TrainBatch(double &batch_data[][], double &batch_labels[]) {
-    int batch_size = ArraySize(batch_data);
+bool CNeuralNetwork::TrainBatch(double &batch_data[], double &batch_labels[]) {
+    int batch_size = ArraySize(batch_labels);
     if(batch_size == 0) return false;
     
     // Forward pass dla całego batch
@@ -1376,7 +1378,12 @@ bool CNeuralNetwork::TrainBatch(double &batch_data[][], double &batch_labels[]) 
     ArrayResize(batch_predictions, batch_size);
     
     for(int i = 0; i < batch_size; i++) {
-        batch_predictions[i] = ForwardPass(batch_data[i]);
+        double temp_input[];
+        ArrayResize(temp_input, m_features_count);
+        for(int j = 0; j < m_features_count; j++) {
+            temp_input[j] = batch_data[i * m_features_count + j];
+        }
+        batch_predictions[i] = ForwardPass(temp_input);
     }
     
     // Backpropagation
@@ -1400,60 +1407,57 @@ bool CNeuralNetwork::Backpropagate(double &targets[]) {
     if(batch_size == 0) return false;
     
     // Obliczenie deltas dla ostatniej warstwy
-    SNeuralLayer &last_layer = m_layers[m_layers_count - 1];
+    int last_layer_index = m_layers_count - 1;
     
-    for(int i = 0; i < last_layer.params.output_size; i++) {
-        double output = last_layer.activations[i];
+    for(int i = 0; i < m_layers[last_layer_index].params.output_size; i++) {
+        double output = m_layers[last_layer_index].activations[i];
         double target = (i < batch_size) ? targets[i] : 0.0;
         
         // Pochodna funkcji straty
         double loss_derivative = CalculateLossDerivative(output, target);
         
         // Pochodna funkcji aktywacji
-        double activation_derivative = ActivateDerivative(output, last_layer.params.activation);
+        double activation_derivative = ActivateDerivative(output, m_layers[last_layer_index].params.activation);
         
         // Delta dla ostatniej warstwy
-        last_layer.deltas[i] = loss_derivative * activation_derivative;
+        m_layers[last_layer_index].deltas[i] = loss_derivative * activation_derivative;
     }
     
     // Backpropagation przez ukryte warstwy
     for(int layer = m_layers_count - 2; layer >= 0; layer--) {
-        SNeuralLayer &current_layer = m_layers[layer];
-        SNeuralLayer &next_layer = m_layers[layer + 1];
+        // Use direct array access instead of references
         
-        for(int i = 0; i < current_layer.params.output_size; i++) {
+        for(int i = 0; i < m_layers[layer].params.output_size; i++) {
             double delta = 0.0;
             
             // Suma deltas z następnej warstwy
-            for(int j = 0; j < next_layer.params.output_size; j++) {
-                int off = i * next_layer.params.output_size + j;
-                delta += next_layer.deltas[j] * next_layer.weights[off];
+            for(int j = 0; j < m_layers[layer + 1].params.output_size; j++) {
+                int off = i * m_layers[layer + 1].params.output_size + j;
+                delta += m_layers[layer + 1].deltas[j] * m_layers[layer + 1].weights[off];
             }
             
             // Pochodna funkcji aktywacji
-            double activation_derivative = ActivateDerivative(current_layer.activations[i], current_layer.params.activation);
+            double activation_derivative = ActivateDerivative(m_layers[layer].activations[i], m_layers[layer].params.activation);
             
             // Delta dla bieżącej warstwy
-            current_layer.deltas[i] = delta * activation_derivative;
+            m_layers[layer].deltas[i] = delta * activation_derivative;
         }
     }
     
     // Obliczenie gradientów
     for(int layer = 0; layer < m_layers_count; layer++) {
-        SNeuralLayer &current_layer = m_layers[layer];
-        
         // Gradienty wag
-        for(int i = 0; i < current_layer.params.input_size; i++) {
-            for(int j = 0; j < current_layer.params.output_size; j++) {
+        for(int i = 0; i < m_layers[layer].params.input_size; i++) {
+            for(int j = 0; j < m_layers[layer].params.output_size; j++) {
                 double input_value = (layer == 0) ? 0.0 : m_layers[layer - 1].activations[i];
-                int off = i * current_layer.params.output_size + j;
-                current_layer.gradients[off] = current_layer.deltas[j] * input_value;
+                int off = i * m_layers[layer].params.output_size + j;
+                m_layers[layer].gradients[off] = m_layers[layer].deltas[j] * input_value;
             }
         }
         
         // Gradienty bias
-        for(int j = 0; j < current_layer.params.output_size; j++) {
-            current_layer.bias_gradients[j] = current_layer.deltas[j];
+        for(int j = 0; j < m_layers[layer].params.output_size; j++) {
+            m_layers[layer].bias_gradients[j] = m_layers[layer].deltas[j];
         }
     }
     
@@ -1501,31 +1505,31 @@ bool CNeuralNetwork::UpdateWeights() {
 bool CNeuralNetwork::ApplySGD(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double momentum = layer.params.momentum;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double momentum = m_layers[layer_index].params.momentum;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            int off = i * layer.params.output_size + j;
-            double gradient = layer.gradients[off];
-            double momentum_update = momentum * layer.momentum_weights[off];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
+            double momentum_update = momentum * m_layers[layer_index].momentum_weights[off];
             double weight_update = -learning_rate * gradient + momentum_update;
             
-            layer.weights[off] += weight_update;
-            layer.momentum_weights[off] = weight_update;
+            m_layers[layer_index].weights[off] += weight_update;
+            m_layers[layer_index].momentum_weights[off] = weight_update;
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
-        double momentum_update = momentum * layer.momentum_bias[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
+        double momentum_update = momentum * m_layers[layer_index].momentum_bias[j];
         double bias_update = -learning_rate * gradient + momentum_update;
         
-        layer.bias[j] += bias_update;
-        layer.momentum_bias[j] = bias_update;
+        m_layers[layer_index].bias[j] += bias_update;
+        m_layers[layer_index].momentum_bias[j] = bias_update;
     }
     
     return true;
@@ -1534,49 +1538,49 @@ bool CNeuralNetwork::ApplySGD(int layer_index) {
 bool CNeuralNetwork::ApplyAdam(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double beta1 = layer.params.beta1;
-    double beta2 = layer.params.beta2;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double beta1 = m_layers[layer_index].params.beta1;
+    double beta2 = m_layers[layer_index].params.beta2;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            int off = i * layer.params.output_size + j;
-            double gradient = layer.gradients[off];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja momentum (bias-corrected first moment)
-            layer.momentum_weights[off] = beta1 * layer.momentum_weights[off] + (1.0 - beta1) * gradient;
+            m_layers[layer_index].momentum_weights[off] = beta1 * m_layers[layer_index].momentum_weights[off] + (1.0 - beta1) * gradient;
             
             // Aktualizacja velocity (bias-corrected second moment)
-            layer.velocity_weights[off] = beta2 * layer.velocity_weights[off] + (1.0 - beta2) * gradient * gradient;
+            m_layers[layer_index].velocity_weights[off] = beta2 * m_layers[layer_index].velocity_weights[off] + (1.0 - beta2) * gradient * gradient;
             
             // Bias correction
-            double m_hat = layer.momentum_weights[off] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-            double v_hat = layer.velocity_weights[off] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+            double m_hat = m_layers[layer_index].momentum_weights[off] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+            double v_hat = m_layers[layer_index].velocity_weights[off] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
             
             // Aktualizacja wagi
-            layer.weights[off] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
+            m_layers[layer_index].weights[off] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja momentum
-        layer.momentum_bias[j] = beta1 * layer.momentum_bias[j] + (1.0 - beta1) * gradient;
+        m_layers[layer_index].momentum_bias[j] = beta1 * m_layers[layer_index].momentum_bias[j] + (1.0 - beta1) * gradient;
         
         // Aktualizacja velocity
-        layer.velocity_bias[j] = beta2 * layer.velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
+        m_layers[layer_index].velocity_bias[j] = beta2 * m_layers[layer_index].velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
         
         // Bias correction
-        double m_hat = layer.momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-        double v_hat = layer.velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+        double m_hat = m_layers[layer_index].momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+        double v_hat = m_layers[layer_index].velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
     }
     
     return true;
@@ -1585,33 +1589,34 @@ bool CNeuralNetwork::ApplyAdam(int layer_index) {
 bool CNeuralNetwork::ApplyRMSprop(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double decay = layer.params.decay;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double decay = m_layers[layer_index].params.decay;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja cache
-            layer.cache_weights[i][j] = decay * layer.cache_weights[i][j] + (1.0 - decay) * gradient * gradient;
+            m_layers[layer_index].cache_weights[off] = decay * m_layers[layer_index].cache_weights[off] + (1.0 - decay) * gradient * gradient;
             
             // Aktualizacja wagi
-            layer.weights[i][j] -= learning_rate * gradient / (MathSqrt(layer.cache_weights[i][j]) + epsilon);
+            m_layers[layer_index].weights[off] -= learning_rate * gradient / (MathSqrt(m_layers[layer_index].cache_weights[off]) + epsilon);
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja cache
-        layer.cache_bias[j] = decay * layer.cache_bias[j] + (1.0 - decay) * gradient * gradient;
+        m_layers[layer_index].cache_bias[j] = decay * m_layers[layer_index].cache_bias[j] + (1.0 - decay) * gradient * gradient;
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * gradient / (MathSqrt(layer.cache_bias[j]) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * gradient / (MathSqrt(m_layers[layer_index].cache_bias[j]) + epsilon);
     }
     
     return true;
@@ -1620,32 +1625,33 @@ bool CNeuralNetwork::ApplyRMSprop(int layer_index) {
 bool CNeuralNetwork::ApplyAdagrad(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja cache (suma kwadratów gradientów)
-            layer.cache_weights[i][j] += gradient * gradient;
+            m_layers[layer_index].cache_weights[off] += gradient * gradient;
             
             // Aktualizacja wagi
-            layer.weights[i][j] -= learning_rate * gradient / (MathSqrt(layer.cache_weights[i][j]) + epsilon);
+            m_layers[layer_index].weights[off] -= learning_rate * gradient / (MathSqrt(m_layers[layer_index].cache_weights[off]) + epsilon);
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja cache
-        layer.cache_bias[j] += gradient * gradient;
+        m_layers[layer_index].cache_bias[j] += gradient * gradient;
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * gradient / (MathSqrt(layer.cache_bias[j]) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * gradient / (MathSqrt(m_layers[layer_index].cache_bias[j]) + epsilon);
     }
     
     return true;
@@ -1654,58 +1660,59 @@ bool CNeuralNetwork::ApplyAdagrad(int layer_index) {
 bool CNeuralNetwork::ApplyAdadelta(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
+    // Direct access to m_layers[layer_index] instead of reference
     double rho = 0.95; // Decay rate
-    double epsilon = layer.params.epsilon;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja cache gradientów
-            layer.cache_weights[i][j] = rho * layer.cache_weights[i][j] + (1.0 - rho) * gradient * gradient;
+            m_layers[layer_index].cache_weights[off] = rho * m_layers[layer_index].cache_weights[off] + (1.0 - rho) * gradient * gradient;
             
             // Obliczenie RMS
-            double rms_grad = MathSqrt(layer.cache_weights[i][j] + epsilon);
+            double rms_grad = MathSqrt(m_layers[layer_index].cache_weights[off] + epsilon);
             
             // Aktualizacja cache deltas (jeśli nie istnieje, użyj domyślnej wartości)
-            if(layer.velocity_weights[i][j] == 0.0) {
-                layer.velocity_weights[i][j] = 1e-8;
+            if(m_layers[layer_index].velocity_weights[off] == 0.0) {
+                m_layers[layer_index].velocity_weights[off] = 1e-8;
             }
-            layer.velocity_weights[i][j] = rho * layer.velocity_weights[i][j] + (1.0 - rho) * layer.velocity_weights[i][j] * layer.velocity_weights[i][j];
+            m_layers[layer_index].velocity_weights[off] = rho * m_layers[layer_index].velocity_weights[off] + (1.0 - rho) * m_layers[layer_index].velocity_weights[off] * m_layers[layer_index].velocity_weights[off];
             
-            double rms_delta = MathSqrt(layer.velocity_weights[i][j] + epsilon);
+            double rms_delta = MathSqrt(m_layers[layer_index].velocity_weights[off] + epsilon);
             
             // Aktualizacja wagi
             double delta = -rms_delta / rms_grad * gradient;
-            layer.weights[i][j] += delta;
-            layer.velocity_weights[i][j] = delta * delta;
+            m_layers[layer_index].weights[off] += delta;
+            m_layers[layer_index].velocity_weights[off] = delta * delta;
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja cache gradientów
-        layer.cache_bias[j] = rho * layer.cache_bias[j] + (1.0 - rho) * gradient * gradient;
+        m_layers[layer_index].cache_bias[j] = rho * m_layers[layer_index].cache_bias[j] + (1.0 - rho) * gradient * gradient;
         
         // Obliczenie RMS
-        double rms_grad = MathSqrt(layer.cache_bias[j] + epsilon);
+        double rms_grad = MathSqrt(m_layers[layer_index].cache_bias[j] + epsilon);
         
         // Aktualizacja cache deltas
-        if(layer.velocity_bias[j] == 0.0) {
-            layer.velocity_bias[j] = 1e-8;
+        if(m_layers[layer_index].velocity_bias[j] == 0.0) {
+            m_layers[layer_index].velocity_bias[j] = 1e-8;
         }
-        layer.velocity_bias[j] = rho * layer.velocity_bias[j] + (1.0 - rho) * layer.velocity_bias[j] * layer.velocity_bias[j];
+        m_layers[layer_index].velocity_bias[j] = rho * m_layers[layer_index].velocity_bias[j] + (1.0 - rho) * m_layers[layer_index].velocity_bias[j] * m_layers[layer_index].velocity_bias[j];
         
-        double rms_delta = MathSqrt(layer.velocity_bias[j] + epsilon);
+        double rms_delta = MathSqrt(m_layers[layer_index].velocity_bias[j] + epsilon);
         
         // Aktualizacja bias
         double delta = -rms_delta / rms_grad * gradient;
-        layer.bias[j] += delta;
-        layer.velocity_bias[j] = delta * delta;
+        m_layers[layer_index].bias[j] += delta;
+        m_layers[layer_index].velocity_bias[j] = delta * delta;
     }
     
     return true;
@@ -1714,54 +1721,55 @@ bool CNeuralNetwork::ApplyAdadelta(int layer_index) {
 bool CNeuralNetwork::ApplyNadam(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double beta1 = layer.params.beta1;
-    double beta2 = layer.params.beta2;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double beta1 = m_layers[layer_index].params.beta1;
+    double beta2 = m_layers[layer_index].params.beta2;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja momentum
-            layer.momentum_weights[i][j] = beta1 * layer.momentum_weights[i][j] + (1.0 - beta1) * gradient;
+            m_layers[layer_index].momentum_weights[off] = beta1 * m_layers[layer_index].momentum_weights[off] + (1.0 - beta1) * gradient;
             
             // Aktualizacja velocity
-            layer.velocity_weights[i][j] = beta2 * layer.velocity_weights[i][j] + (1.0 - beta2) * gradient * gradient;
+            m_layers[layer_index].velocity_weights[off] = beta2 * m_layers[layer_index].velocity_weights[off] + (1.0 - beta2) * gradient * gradient;
             
             // Bias correction
-            double m_hat = layer.momentum_weights[i][j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-            double v_hat = layer.velocity_weights[i][j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+            double m_hat = m_layers[layer_index].momentum_weights[off] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+            double v_hat = m_layers[layer_index].velocity_weights[off] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
             
             // Nadam correction
             double nadam_correction = beta1 * m_hat / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
             
             // Aktualizacja wagi
-            layer.weights[i][j] -= learning_rate * (nadam_correction + (1.0 - beta1) * gradient / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1))) / (MathSqrt(v_hat) + epsilon);
+            m_layers[layer_index].weights[off] -= learning_rate * (nadam_correction + (1.0 - beta1) * gradient / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1))) / (MathSqrt(v_hat) + epsilon);
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja momentum
-        layer.momentum_bias[j] = beta1 * layer.momentum_bias[j] + (1.0 - beta1) * gradient;
+        m_layers[layer_index].momentum_bias[j] = beta1 * m_layers[layer_index].momentum_bias[j] + (1.0 - beta1) * gradient;
         
         // Aktualizacja velocity
-        layer.velocity_bias[j] = beta2 * layer.velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
+        m_layers[layer_index].velocity_bias[j] = beta2 * m_layers[layer_index].velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
         
         // Bias correction
-        double m_hat = layer.momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-        double v_hat = layer.velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+        double m_hat = m_layers[layer_index].momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+        double v_hat = m_layers[layer_index].velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
         
         // Nadam correction
         double nadam_correction = beta1 * m_hat / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * (nadam_correction + (1.0 - beta1) * gradient / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1))) / (MathSqrt(v_hat) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * (nadam_correction + (1.0 - beta1) * gradient / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1))) / (MathSqrt(v_hat) + epsilon);
     }
     
     return true;
@@ -1770,58 +1778,59 @@ bool CNeuralNetwork::ApplyNadam(int layer_index) {
 bool CNeuralNetwork::ApplyAMSGrad(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double beta1 = layer.params.beta1;
-    double beta2 = layer.params.beta2;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double beta1 = m_layers[layer_index].params.beta1;
+    double beta2 = m_layers[layer_index].params.beta2;
+    double epsilon = m_layers[layer_index].params.epsilon;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Aktualizacja momentum
-            layer.momentum_weights[i][j] = beta1 * layer.momentum_weights[i][j] + (1.0 - beta1) * gradient;
+            m_layers[layer_index].momentum_weights[off] = beta1 * m_layers[layer_index].momentum_weights[off] + (1.0 - beta1) * gradient;
             
             // Aktualizacja velocity
-            layer.velocity_weights[i][j] = beta2 * layer.velocity_weights[i][j] + (1.0 - beta2) * gradient * gradient;
+            m_layers[layer_index].velocity_weights[off] = beta2 * m_layers[layer_index].velocity_weights[off] + (1.0 - beta2) * gradient * gradient;
             
             // Bias correction
-            double m_hat = layer.momentum_weights[i][j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-            double v_hat = layer.velocity_weights[i][j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+            double m_hat = m_layers[layer_index].momentum_weights[off] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+            double v_hat = m_layers[layer_index].velocity_weights[off] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
             
             // AMSGrad correction - użyj maksimum z poprzednich v_hat
-            if(layer.cache_weights[i][j] < v_hat) {
-                layer.cache_weights[i][j] = v_hat;
+            if(m_layers[layer_index].cache_weights[off] < v_hat) {
+                m_layers[layer_index].cache_weights[off] = v_hat;
             }
             
             // Aktualizacja wagi
-            layer.weights[i][j] -= learning_rate * m_hat / (MathSqrt(layer.cache_weights[i][j]) + epsilon);
+            m_layers[layer_index].weights[off] -= learning_rate * m_hat / (MathSqrt(m_layers[layer_index].cache_weights[off]) + epsilon);
         }
     }
     
     // Aktualizacja bias
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja momentum
-        layer.momentum_bias[j] = beta1 * layer.momentum_bias[j] + (1.0 - beta1) * gradient;
+        m_layers[layer_index].momentum_bias[j] = beta1 * m_layers[layer_index].momentum_bias[j] + (1.0 - beta1) * gradient;
         
         // Aktualizacja velocity
-        layer.velocity_bias[j] = beta2 * layer.velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
+        m_layers[layer_index].velocity_bias[j] = beta2 * m_layers[layer_index].velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
         
         // Bias correction
-        double m_hat = layer.momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-        double v_hat = layer.velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+        double m_hat = m_layers[layer_index].momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+        double v_hat = m_layers[layer_index].velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
         
         // AMSGrad correction
-        if(layer.cache_bias[j] < v_hat) {
-            layer.cache_bias[j] = v_hat;
+        if(m_layers[layer_index].cache_bias[j] < v_hat) {
+            m_layers[layer_index].cache_bias[j] = v_hat;
         }
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * m_hat / (MathSqrt(layer.cache_bias[j]) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * m_hat / (MathSqrt(m_layers[layer_index].cache_bias[j]) + epsilon);
     }
     
     return true;
@@ -1830,52 +1839,53 @@ bool CNeuralNetwork::ApplyAMSGrad(int layer_index) {
 bool CNeuralNetwork::ApplyAdamW(int layer_index) {
     if(layer_index < 0 || layer_index >= m_layers_count) return false;
     
-    SNeuralLayer &layer = m_layers[layer_index];
-    double learning_rate = layer.params.learning_rate;
-    double beta1 = layer.params.beta1;
-    double beta2 = layer.params.beta2;
-    double epsilon = layer.params.epsilon;
+    // Direct access to m_layers[layer_index] instead of reference
+    double learning_rate = m_layers[layer_index].params.learning_rate;
+    double beta1 = m_layers[layer_index].params.beta1;
+    double beta2 = m_layers[layer_index].params.beta2;
+    double epsilon = m_layers[layer_index].params.epsilon;
     double weight_decay = m_params.weight_decay;
     
     // Aktualizacja wag
-    for(int i = 0; i < layer.params.input_size; i++) {
-        for(int j = 0; j < layer.params.output_size; j++) {
-            double gradient = layer.gradients[i][j];
+    for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
+        for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+            int off = i * m_layers[layer_index].params.output_size + j;
+            double gradient = m_layers[layer_index].gradients[off];
             
             // Dodaj weight decay do gradientu
-            gradient += weight_decay * layer.weights[i][j];
+            gradient += weight_decay * m_layers[layer_index].weights[off];
             
             // Aktualizacja momentum
-            layer.momentum_weights[i][j] = beta1 * layer.momentum_weights[i][j] + (1.0 - beta1) * gradient;
+            m_layers[layer_index].momentum_weights[off] = beta1 * m_layers[layer_index].momentum_weights[off] + (1.0 - beta1) * gradient;
             
             // Aktualizacja velocity
-            layer.velocity_weights[i][j] = beta2 * layer.velocity_weights[i][j] + (1.0 - beta2) * gradient * gradient;
+            m_layers[layer_index].velocity_weights[off] = beta2 * m_layers[layer_index].velocity_weights[off] + (1.0 - beta2) * gradient * gradient;
             
             // Bias correction
-            double m_hat = layer.momentum_weights[i][j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-            double v_hat = layer.velocity_weights[i][j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+            double m_hat = m_layers[layer_index].momentum_weights[off] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+            double v_hat = m_layers[layer_index].velocity_weights[off] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
             
             // Aktualizacja wagi (z weight decay)
-            layer.weights[i][j] -= learning_rate * (m_hat / (MathSqrt(v_hat) + epsilon) + weight_decay * layer.weights[i][j]);
+            m_layers[layer_index].weights[off] -= learning_rate * (m_hat / (MathSqrt(v_hat) + epsilon) + weight_decay * m_layers[layer_index].weights[off]);
         }
     }
     
     // Aktualizacja bias (bez weight decay)
-    for(int j = 0; j < layer.params.output_size; j++) {
-        double gradient = layer.bias_gradients[j];
+    for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
+        double gradient = m_layers[layer_index].bias_gradients[j];
         
         // Aktualizacja momentum
-        layer.momentum_bias[j] = beta1 * layer.momentum_bias[j] + (1.0 - beta1) * gradient;
+        m_layers[layer_index].momentum_bias[j] = beta1 * m_layers[layer_index].momentum_bias[j] + (1.0 - beta1) * gradient;
         
         // Aktualizacja velocity
-        layer.velocity_bias[j] = beta2 * layer.velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
+        m_layers[layer_index].velocity_bias[j] = beta2 * m_layers[layer_index].velocity_bias[j] + (1.0 - beta2) * gradient * gradient;
         
         // Bias correction
-        double m_hat = layer.momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
-        double v_hat = layer.velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
+        double m_hat = m_layers[layer_index].momentum_bias[j] / (1.0 - MathPow(beta1, m_training_result.epochs_completed + 1));
+        double v_hat = m_layers[layer_index].velocity_bias[j] / (1.0 - MathPow(beta2, m_training_result.epochs_completed + 1));
         
         // Aktualizacja bias
-        layer.bias[j] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
+        m_layers[layer_index].bias[j] -= learning_rate * m_hat / (MathSqrt(v_hat) + epsilon);
     }
     
     return true;
@@ -1951,9 +1961,10 @@ bool CNeuralNetwork::SaveModel(string filename) {
         FileWriteString(file_handle, layer_str);
         
         // Zapisanie wag
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].weights[off]);
             }
         }
         
@@ -1963,9 +1974,10 @@ bool CNeuralNetwork::SaveModel(string filename) {
         }
         
         // Zapisanie gradientów wag
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].gradients[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].gradients[off]);
             }
         }
         
@@ -1985,9 +1997,10 @@ bool CNeuralNetwork::SaveModel(string filename) {
         }
         
         // Zapisanie momentum dla wag
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].momentum_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].momentum_weights[off]);
             }
         }
         
@@ -1997,9 +2010,10 @@ bool CNeuralNetwork::SaveModel(string filename) {
         }
         
         // Zapisanie velocity dla wag
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].velocity_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].velocity_weights[off]);
             }
         }
         
@@ -2009,9 +2023,10 @@ bool CNeuralNetwork::SaveModel(string filename) {
         }
         
         // Zapisanie cache dla RMSprop
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].cache_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].cache_weights[off]);
             }
         }
         
@@ -2070,13 +2085,13 @@ bool CNeuralNetwork::LoadModel(string filename) {
             m_params.creation_time = StringToTime(FileReadString(file_handle));
         } else if(line == "Layer_") {
             SNeuralLayerParams layer_params;
-            layer_params.layer_type = StringToENUM(FileReadString(file_handle));
+            layer_params.layer_type = (ENUM_LAYER_TYPE)StringToInteger(FileReadString(file_handle));
             layer_params.input_size = StringToInteger(FileReadString(file_handle));
             layer_params.output_size = StringToInteger(FileReadString(file_handle));
-            layer_params.activation = StringToENUM(FileReadString(file_handle));
+            layer_params.activation = (ENUM_ACTIVATION_FUNCTION)StringToInteger(FileReadString(file_handle));
             layer_params.dropout_rate = StringToDouble(FileReadString(file_handle));
             layer_params.use_bias = StringToBool(FileReadString(file_handle));
-            layer_params.weight_init = StringToENUM(FileReadString(file_handle));
+            layer_params.weight_init = (ENUM_WEIGHT_INITIALIZATION)StringToInteger(FileReadString(file_handle));
             layer_params.learning_rate = StringToDouble(FileReadString(file_handle));
             layer_params.momentum = StringToDouble(FileReadString(file_handle));
             layer_params.epsilon = StringToDouble(FileReadString(file_handle));
@@ -2090,9 +2105,10 @@ bool CNeuralNetwork::LoadModel(string filename) {
             AddLayer(layer_params); // Dodaj warstwę do sieci
             
             // Wczytaj wagę
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2102,9 +2118,10 @@ bool CNeuralNetwork::LoadModel(string filename) {
             }
             
             // Wczytaj gradienty wag
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].gradients[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].gradients[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2124,9 +2141,10 @@ bool CNeuralNetwork::LoadModel(string filename) {
             }
             
             // Wczytaj momentum dla wag
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].momentum_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].momentum_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2136,9 +2154,10 @@ bool CNeuralNetwork::LoadModel(string filename) {
             }
             
             // Wczytaj velocity dla wag
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].velocity_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].velocity_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2148,9 +2167,10 @@ bool CNeuralNetwork::LoadModel(string filename) {
             }
             
             // Wczytaj cache dla RMSprop
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].cache_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].cache_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2212,9 +2232,10 @@ bool CNeuralNetwork::ExportModel(string filename) {
         
         FileWriteString(file_handle, layer_str);
         
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].weights[off]);
             }
         }
         
@@ -2222,9 +2243,10 @@ bool CNeuralNetwork::ExportModel(string filename) {
             FileWriteDouble(file_handle, m_layers[i].bias[j]);
         }
         
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].gradients[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].gradients[off]);
             }
         }
         
@@ -2240,9 +2262,10 @@ bool CNeuralNetwork::ExportModel(string filename) {
             FileWriteDouble(file_handle, m_layers[i].deltas[j]);
         }
         
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].momentum_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].momentum_weights[off]);
             }
         }
         
@@ -2250,9 +2273,10 @@ bool CNeuralNetwork::ExportModel(string filename) {
             FileWriteDouble(file_handle, m_layers[i].momentum_bias[j]);
         }
         
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].velocity_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].velocity_weights[off]);
             }
         }
         
@@ -2260,9 +2284,10 @@ bool CNeuralNetwork::ExportModel(string filename) {
             FileWriteDouble(file_handle, m_layers[i].velocity_bias[j]);
         }
         
-        for(int j = 0; j < m_layers[i].params.output_size; j++) {
-            for(int k = 0; k < m_layers[i].params.input_size; k++) {
-                FileWriteDouble(file_handle, m_layers[i].cache_weights[k][j]);
+        for(int k = 0; k < m_layers[i].params.input_size; k++) {
+            for(int j = 0; j < m_layers[i].params.output_size; j++) {
+                int off = k * m_layers[i].params.output_size + j;
+                FileWriteDouble(file_handle, m_layers[i].cache_weights[off]);
             }
         }
         
@@ -2317,13 +2342,13 @@ bool CNeuralNetwork::ImportModel(string filename) {
         string layer_str = FileReadString(file_handle);
         if(layer_str == "Layer_") {
             SNeuralLayerParams layer_params;
-            layer_params.layer_type = StringToENUM(FileReadString(file_handle));
+            layer_params.layer_type = (ENUM_LAYER_TYPE)StringToInteger(FileReadString(file_handle));
             layer_params.input_size = StringToInteger(FileReadString(file_handle));
             layer_params.output_size = StringToInteger(FileReadString(file_handle));
-            layer_params.activation = StringToENUM(FileReadString(file_handle));
+            layer_params.activation = (ENUM_ACTIVATION_FUNCTION)StringToInteger(FileReadString(file_handle));
             layer_params.dropout_rate = StringToDouble(FileReadString(file_handle));
             layer_params.use_bias = StringToBool(FileReadString(file_handle));
-            layer_params.weight_init = StringToENUM(FileReadString(file_handle));
+            layer_params.weight_init = (ENUM_WEIGHT_INITIALIZATION)StringToInteger(FileReadString(file_handle));
             layer_params.learning_rate = StringToDouble(FileReadString(file_handle));
             layer_params.momentum = StringToDouble(FileReadString(file_handle));
             layer_params.epsilon = StringToDouble(FileReadString(file_handle));
@@ -2336,9 +2361,10 @@ bool CNeuralNetwork::ImportModel(string filename) {
             
             AddLayer(layer_params); // Dodaj warstwę do sieci
             
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2346,9 +2372,10 @@ bool CNeuralNetwork::ImportModel(string filename) {
                 m_layers[m_layers_count - 1].bias[j] = FileReadDouble(file_handle);
             }
             
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].gradients[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].gradients[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2364,9 +2391,10 @@ bool CNeuralNetwork::ImportModel(string filename) {
                 m_layers[m_layers_count - 1].deltas[j] = FileReadDouble(file_handle);
             }
             
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].momentum_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].momentum_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2374,9 +2402,10 @@ bool CNeuralNetwork::ImportModel(string filename) {
                 m_layers[m_layers_count - 1].momentum_bias[j] = FileReadDouble(file_handle);
             }
             
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].velocity_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].velocity_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2384,9 +2413,10 @@ bool CNeuralNetwork::ImportModel(string filename) {
                 m_layers[m_layers_count - 1].velocity_bias[j] = FileReadDouble(file_handle);
             }
             
-            for(int j = 0; j < layer_params.output_size; j++) {
-                for(int k = 0; k < layer_params.input_size; k++) {
-                    m_layers[m_layers_count - 1].cache_weights[k][j] = FileReadDouble(file_handle);
+            for(int k = 0; k < layer_params.input_size; k++) {
+                for(int j = 0; j < layer_params.output_size; j++) {
+                    int off = k * layer_params.output_size + j;
+                    m_layers[m_layers_count - 1].cache_weights[off] = FileReadDouble(file_handle);
                 }
             }
             
@@ -2419,7 +2449,8 @@ double CNeuralNetwork::GetWeight(int layer_index, int from_neuron, int to_neuron
     if(from_neuron < 0 || from_neuron >= m_layers[layer_index].params.input_size) return 0.0;
     if(to_neuron < 0 || to_neuron >= m_layers[layer_index].params.output_size) return 0.0;
     
-    return m_layers[layer_index].weights[from_neuron][to_neuron];
+    int off = from_neuron * m_layers[layer_index].params.output_size + to_neuron;
+    return m_layers[layer_index].weights[off];
 }
 
 double CNeuralNetwork::GetBias(int layer_index, int neuron_index) {
@@ -2434,7 +2465,8 @@ double CNeuralNetwork::GetGradient(int layer_index, int from_neuron, int to_neur
     if(from_neuron < 0 || from_neuron >= m_layers[layer_index].params.input_size) return 0.0;
     if(to_neuron < 0 || to_neuron >= m_layers[layer_index].params.output_size) return 0.0;
     
-    return m_layers[layer_index].gradients[from_neuron][to_neuron];
+    int off = from_neuron * m_layers[layer_index].params.output_size + to_neuron;
+    return m_layers[layer_index].gradients[off];
 }
 
 string CNeuralNetwork::GetModelSummary() {
@@ -2512,7 +2544,7 @@ string CNeuralNetwork::GetLayerReport(int layer_index) {
     report += "Typ warstwy: " + IntegerToString(m_layers[layer_index].params.layer_type) + "\n";
     report += "Rozmiar wejścia: " + IntegerToString(m_layers[layer_index].params.input_size) + "\n";
     report += "Rozmiar wyjścia: " + IntegerToString(m_layers[layer_index].params.output_size) + "\n";
-    report += "Funkcja aktywacji: " + IntegerToString(m_layers[layer_index].params.activation_function) + "\n";
+    report += "Funkcja aktywacji: " + IntegerToString(m_layers[layer_index].params.activation) + "\n";
     report += "Liczba neuronów: " + IntegerToString(m_layers[layer_index].params.output_size) + "\n";
     report += "Liczba wag: " + IntegerToString(m_layers[layer_index].params.input_size * m_layers[layer_index].params.output_size) + "\n";
     report += "Liczba biasów: " + IntegerToString(m_layers[layer_index].params.output_size) + "\n";
@@ -2522,12 +2554,13 @@ string CNeuralNetwork::GetLayerReport(int layer_index) {
     double min_bias = 0.0, max_bias = 0.0, avg_bias = 0.0;
     
     if(m_layers[layer_index].params.input_size > 0 && m_layers[layer_index].params.output_size > 0) {
-        min_weight = max_weight = m_layers[layer_index].weights[0][0];
+        min_weight = max_weight = m_layers[layer_index].weights[0];
         min_bias = max_bias = m_layers[layer_index].bias[0];
         
         for(int i = 0; i < m_layers[layer_index].params.input_size; i++) {
             for(int j = 0; j < m_layers[layer_index].params.output_size; j++) {
-                double weight = m_layers[layer_index].weights[i][j];
+                int off = i * m_layers[layer_index].params.output_size + j;
+                double weight = m_layers[layer_index].weights[off];
                 if(weight < min_weight) min_weight = weight;
                 if(weight > max_weight) max_weight = weight;
                 avg_weight += weight;

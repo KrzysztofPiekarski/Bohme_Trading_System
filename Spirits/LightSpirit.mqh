@@ -2,6 +2,7 @@
 #include <Graphics\Graphic.mqh>
 #include "../Utils/LoggingSystem.mqh"
 #include "../AI/AIEnums.mqh"
+#include "../AI/PatternRecognition.mqh"
 
 // Sprawdzamy czy enum nie są już zdefiniowane - usunięte dublowanie
 #ifndef ENUM_LEVEL_TYPE_DEFINED
@@ -49,7 +50,7 @@ public:
     bool Initialize() { return true; }
     void UpdateData() {}
     // W MQL przekazujemy 1D tablicę i obliczamy indeksy OHLC ręcznie
-    void Recognize(double& matrix[], double& probabilities[]) {
+    void Recognize(double& data_matrix[], double& probabilities[]) {
         // Placeholder implementation
         ArrayResize(probabilities, 8);
         for(int i = 0; i < 8; i++) {
@@ -131,8 +132,8 @@ double ValidateMultiTimeframeAlignment() {
 }
 
 // Przygotowanie macierzy OHLC jako spłaszczonej tablicy [bars*4]
-void PrepareOHLCMatrix(double& matrix[], int bars) {
-    ArrayResize(matrix, bars * 4);
+void PrepareOHLCMatrix(double& data_matrix[], int bars) {
+    ArrayResize(data_matrix, bars * 4);
     
     double opens[], highs[], lows[], closes[];
     if(CopyOpen(Symbol(), PERIOD_CURRENT, 0, bars, opens) == bars &&
@@ -141,10 +142,10 @@ void PrepareOHLCMatrix(double& matrix[], int bars) {
        CopyClose(Symbol(), PERIOD_CURRENT, 0, bars, closes) == bars) {
         
         for(int i = 0; i < bars; i++) {
-            matrix[i * 4 + 0] = opens[i];   // Open
-            matrix[i * 4 + 1] = highs[i];   // High  
-            matrix[i * 4 + 2] = lows[i];    // Low
-            matrix[i * 4 + 3] = closes[i];  // Close
+            data_matrix[i * 4 + 0] = opens[i];   // Open
+            data_matrix[i * 4 + 1] = highs[i];   // High  
+            data_matrix[i * 4 + 2] = lows[i];    // Low
+            data_matrix[i * 4 + 3] = closes[i];  // Close
         }
     }
 }
@@ -155,7 +156,7 @@ double CalculatePatternCompletion(int pattern_type) {
 }
 
 // Ocena jakości wzorca dla spłaszczonej macierzy [N*4]
-double AssessPatternQuality(int pattern_type, double& matrix[]) {
+double AssessPatternQuality(int pattern_type, double& data_matrix[]) {
     // Placeholder implementation
     return 50.0 + (MathRand() % 50); // 50-100
 }
@@ -282,7 +283,10 @@ double LightSpirit::GetSignalClarity() {
     PrepareTransformerInputs(transformer_inputs, technical_clarity, pattern_clarity, 
                            level_clarity, fractal_clarity, snr, convergence);
     
-    double transformer_clarity = m_signal_transformer->Predict(transformer_inputs);
+    double transformer_clarity = 0.0;
+    if(CheckPointer(m_signal_transformer) == POINTER_DYNAMIC) {
+        transformer_clarity = m_signal_transformer.Predict(transformer_inputs);
+    }
     
     // Weighted combination
     double final_clarity = (technical_clarity * 0.25 +
@@ -302,40 +306,70 @@ double LightSpirit::GetSignalClarity() {
 // Technical Signal Clarity
 double LightSpirit::CalculateTechnicalSignalClarity() {
     // RSI clarity
-    double rsi = iRSI(Symbol(), PERIOD_CURRENT, 14, PRICE_CLOSE, 0);
-    double rsi_clarity = 0.0;
-    if(rsi > 70 || rsi < 30) rsi_clarity = 80.0; // Clear overbought/oversold
-    else if(rsi > 60 || rsi < 40) rsi_clarity = 60.0; // Moderate
-    else rsi_clarity = 20.0; // Neutral zone
+    int rsi_handle = iRSI(Symbol(), PERIOD_CURRENT, 14, PRICE_CLOSE);
+    double rsi_buffer[1];
+    double rsi_clarity = 50.0; // Default value
+    
+    if(CopyBuffer(rsi_handle, 0, 0, 1, rsi_buffer) == 1) {
+        double rsi = rsi_buffer[0];
+        if(rsi > 70 || rsi < 30) rsi_clarity = 80.0; // Clear overbought/oversold
+        else if(rsi > 60 || rsi < 40) rsi_clarity = 60.0; // Moderate
+        else rsi_clarity = 20.0; // Neutral zone
+    }
     
     // MACD clarity
-    double macd_main = iMACD(Symbol(), PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE, MODE_MAIN, 0);
-    double macd_signal = iMACD(Symbol(), PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE, MODE_SIGNAL, 0);
-    double macd_clarity = MathAbs(macd_main - macd_signal) * 10000.0; // Scale up
+    int macd_handle = iMACD(Symbol(), PERIOD_CURRENT, 12, 26, 9, PRICE_CLOSE);
+    double macd_buffer[1];
+    double macd_clarity = 50.0; // Default value
+    
+    if(CopyBuffer(macd_handle, 0, 0, 1, macd_buffer) == 1) { // MACD main line
+        double macd_main = macd_buffer[0];
+        if(CopyBuffer(macd_handle, 1, 0, 1, macd_buffer) == 1) { // MACD signal line
+            double macd_signal = macd_buffer[0];
+            macd_clarity = MathAbs(macd_main - macd_signal) * 10000.0; // Scale up
+        }
+    }
     
     // Moving Average clarity
-    double ma_20 = iMA(Symbol(), PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, 0);
-    double ma_50 = iMA(Symbol(), PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, 0);
+    int ma20_handle = iMA(Symbol(), PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE);
+    int ma50_handle = iMA(Symbol(), PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE);
+    double ma_buffer[1];
+    double ma_clarity = 50.0; // Default value
     double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
     
-    double ma_clarity = 0.0;
-    if((current_price > ma_20 && ma_20 > ma_50) || (current_price < ma_20 && ma_20 < ma_50)) {
-        ma_clarity = 70.0; // Clear trend
-    }
-    else {
-        ma_clarity = 30.0; // Mixed signals
+    if(CopyBuffer(ma20_handle, 0, 0, 1, ma_buffer) == 1) {
+        double ma_20 = ma_buffer[0];
+        if(CopyBuffer(ma50_handle, 0, 0, 1, ma_buffer) == 1) {
+            double ma_50 = ma_buffer[0];
+            
+            if((current_price > ma_20 && ma_20 > ma_50) || (current_price < ma_20 && ma_20 < ma_50)) {
+                ma_clarity = 70.0; // Clear trend
+            }
+            else {
+                ma_clarity = 30.0; // Mixed signals
+            }
+        }
     }
     
     // Bollinger Bands clarity
-    double bb_upper = iBands(Symbol(), PERIOD_CURRENT, 20, 2, 0, PRICE_CLOSE, MODE_UPPER, 0);
-    double bb_lower = iBands(Symbol(), PERIOD_CURRENT, 20, 2, 0, PRICE_CLOSE, MODE_LOWER, 0);
-    double bb_middle = iBands(Symbol(), PERIOD_CURRENT, 20, 2, 0, PRICE_CLOSE, MODE_MAIN, 0);
+    int bb_handle = iBands(Symbol(), PERIOD_CURRENT, 20, 2, 0, PRICE_CLOSE);
+    double bb_buffer[1];
+    double bb_clarity = 50.0; // Default value
     
-    double bb_clarity = 0.0;
-    if(current_price > bb_upper) bb_clarity = 85.0; // Clear breakout up
-    else if(current_price < bb_lower) bb_clarity = 85.0; // Clear breakout down
-    else if(MathAbs(current_price - bb_middle) / (bb_upper - bb_lower) < 0.1) bb_clarity = 20.0; // Squeeze
-    else bb_clarity = 50.0; // Normal
+    if(CopyBuffer(bb_handle, 0, 0, 1, bb_buffer) == 1) { // MODE_MAIN
+        double bb_middle = bb_buffer[0];
+        if(CopyBuffer(bb_handle, 1, 0, 1, bb_buffer) == 1) { // MODE_UPPER
+            double bb_upper = bb_buffer[0];
+            if(CopyBuffer(bb_handle, 2, 0, 1, bb_buffer) == 1) { // MODE_LOWER
+                double bb_lower = bb_buffer[0];
+                
+                if(current_price > bb_upper) bb_clarity = 85.0; // Clear breakout up
+                else if(current_price < bb_lower) bb_clarity = 85.0; // Clear breakout down
+                else if(MathAbs(current_price - bb_middle) / (bb_upper - bb_lower) < 0.1) bb_clarity = 20.0; // Squeeze
+                else bb_clarity = 50.0; // Normal
+            }
+        }
+    }
     
     // Combined technical clarity
     return (rsi_clarity * 0.3 + macd_clarity * 0.3 + ma_clarity * 0.25 + bb_clarity * 0.15);
@@ -349,7 +383,9 @@ double LightSpirit::CalculatePatternClarity() {
     
     // CNN pattern recognition
     double pattern_probabilities[8]; // For 8 different patterns
-    m_pattern_cnn->Recognize(price_matrix, pattern_probabilities);
+    if(CheckPointer(m_pattern_cnn) == POINTER_DYNAMIC) {
+        m_pattern_cnn.Recognize(price_matrix, pattern_probabilities);
+    }
     
     // Find dominant pattern
     double max_probability = 0.0;
@@ -362,8 +398,8 @@ double LightSpirit::CalculatePatternClarity() {
         }
     }
     
-    // Pattern completion analysis
-    double completion_score = CalculatePatternCompletion(dominant_pattern);
+    // Pattern completion analysis (based on confidence and clarity)
+    double completion_score = (max_probability > 0.7) ? 90.0 : (max_probability > 0.5) ? 60.0 : 30.0;
     
     // Pattern quality assessment
     double pattern_quality = AssessPatternQuality(dominant_pattern, price_matrix);
@@ -373,8 +409,10 @@ double LightSpirit::CalculatePatternClarity() {
 
 // Support/Resistance Level Clarity
 double LightSpirit::CalculateLevelClarity() {
-    SLevel &levels[];
-    m_sr_analyzer->GetKeyLevels(levels);
+    SLevel levels[];
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.GetKeyLevels(levels);
+    }
     
     double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
     double level_clarity = 0.0;
@@ -458,7 +496,9 @@ ENUM_PATTERN_TYPE LightSpirit::GetDominantPattern() {
     PrepareOHLCMatrix(price_matrix, 50);
     
     double pattern_probabilities[8];
-    m_pattern_cnn->Recognize(price_matrix, pattern_probabilities);
+    if(CheckPointer(m_pattern_cnn) == POINTER_DYNAMIC) {
+        m_pattern_cnn.Recognize(price_matrix, pattern_probabilities);
+    }
     
     // Find dominant pattern
     double max_probability = 0.0;
@@ -496,8 +536,10 @@ double LightSpirit::GetPatternCompletionProbability() {
 }
 
 double LightSpirit::GetSupportResistanceStrength() {
-    SLevel &levels[];
-    m_sr_analyzer->GetKeyLevels(levels);
+    SLevel levels[];
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.GetKeyLevels(levels);
+    }
     
     double total_strength = 0.0;
     int level_count = 0;
@@ -513,13 +555,17 @@ double LightSpirit::GetSupportResistanceStrength() {
 }
 
 void LightSpirit::GetKeyLevels(SLevel &levels[]) {
-    m_sr_analyzer->GetKeyLevels(levels);
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.GetKeyLevels(levels);
+    }
 }
 
 double LightSpirit::GetLevelBreakoutProbability() {
     double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
-    SLevel &levels[];
-    m_sr_analyzer->GetKeyLevels(levels);
+    SLevel levels[];
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.GetKeyLevels(levels);
+    }
     
     double nearest_level_distance = 100.0;
     double nearest_level_strength = 0.0;
@@ -596,20 +642,20 @@ bool LightSpirit::Initialize() {
     LogInfo(LOG_COMPONENT_LIGHT, "Inicjalizacja Light Spirit", "Rozpoczęcie inicjalizacji");
     
     // Initialize neural networks
-    if(m_pattern_cnn != NULL) {
-        m_pattern_cnn->Initialize();
+    if(CheckPointer(m_pattern_cnn) == POINTER_DYNAMIC) {
+        m_pattern_cnn.Initialize();
     }
     
-    if(m_signal_transformer != NULL) {
-        m_signal_transformer->Initialize();
+    if(CheckPointer(m_signal_transformer) == POINTER_DYNAMIC) {
+        m_signal_transformer.Initialize();
     }
     
-    if(m_sr_analyzer != NULL) {
-        m_sr_analyzer->Initialize();
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.Initialize();
     }
     
-    if(m_fractal_detector != NULL) {
-        m_fractal_detector->Initialize();
+    if(CheckPointer(m_fractal_detector) == POINTER_DYNAMIC) {
+        m_fractal_detector.Initialize();
     }
     
     // Initialize signal history
@@ -641,16 +687,16 @@ void LightSpirit::UpdateData() {
     m_noise_filter_buffer[19] = GetNoiseLevel();
     
     // Update neural networks
-    if(m_pattern_cnn != NULL) {
-        m_pattern_cnn->UpdateData();
+    if(CheckPointer(m_pattern_cnn) == POINTER_DYNAMIC) {
+        m_pattern_cnn.UpdateData();
     }
     
-    if(m_signal_transformer != NULL) {
-        m_signal_transformer->UpdateData();
+    if(CheckPointer(m_signal_transformer) == POINTER_DYNAMIC) {
+        m_signal_transformer.UpdateData();
     }
     
-    if(m_sr_analyzer != NULL) {
-        m_sr_analyzer->UpdateData();
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) {
+        m_sr_analyzer.UpdateData();
     }
 }
 
@@ -712,10 +758,10 @@ double LightSpirit::RecognizeFlagPennantPattern() {
 
 // Destruktor
 LightSpirit::~LightSpirit() {
-    if(m_pattern_cnn != NULL) delete m_pattern_cnn;
-    if(m_signal_transformer != NULL) delete m_signal_transformer;
-    if(m_sr_analyzer != NULL) delete m_sr_analyzer;
-    if(m_fractal_detector != NULL) delete m_fractal_detector;
+    if(CheckPointer(m_pattern_cnn) == POINTER_DYNAMIC) delete m_pattern_cnn;
+    if(CheckPointer(m_signal_transformer) == POINTER_DYNAMIC) delete m_signal_transformer;
+    if(CheckPointer(m_sr_analyzer) == POINTER_DYNAMIC) delete m_sr_analyzer;
+    if(CheckPointer(m_fractal_detector) == POINTER_DYNAMIC) delete m_fractal_detector;
 };
 
 double LightSpirit::GetNoiseLevel() {

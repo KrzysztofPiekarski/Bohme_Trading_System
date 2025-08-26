@@ -1671,11 +1671,23 @@ bool HasExtremeEmotion() {
 }
 
 EmotionAnalysis GetCurrentEmotion() {
-    return g_sentiment_analyzer != NULL ? g_sentiment_analyzer.GetCurrentEmotion() : EmotionAnalysis{};
+    if(g_sentiment_analyzer != NULL) {
+        return g_sentiment_analyzer.GetCurrentEmotion();
+    } else {
+        EmotionAnalysis default_emotion;
+        ZeroMemory(default_emotion);
+        return default_emotion;
+    }
 }
 
 MarketSentiment GetMarketSentiment() {
-    return g_sentiment_analyzer != NULL ? g_sentiment_analyzer.GetMarketSentiment() : MarketSentiment{};
+    if(g_sentiment_analyzer != NULL) {
+        return g_sentiment_analyzer.GetMarketSentiment();
+    } else {
+        MarketSentiment default_sentiment;
+        ZeroMemory(default_sentiment);
+        return default_sentiment;
+    }
 }
 
 string GetSentimentAnalyzerReport() {

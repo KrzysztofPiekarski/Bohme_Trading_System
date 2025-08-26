@@ -23,10 +23,15 @@ enum ENUM_ENERGY_STATE {
 
 // Jakość sygnału (używane przez Light Spirit w AdvancedAI)
 enum ENUM_SIGNAL_QUALITY {
+    SIGNAL_NOISE,
     SIGNAL_POOR,
+    SIGNAL_WEAK,
     SIGNAL_FAIR,
+    SIGNAL_MODERATE,
     SIGNAL_GOOD,
-    SIGNAL_EXCELLENT
+    SIGNAL_STRONG,
+    SIGNAL_EXCELLENT,
+    SIGNAL_CRYSTAL_CLEAR
 };
 
 // Stan harmonii (używane przez Sound Spirit w AdvancedAI)

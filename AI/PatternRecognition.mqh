@@ -11,6 +11,7 @@
 
 // Typy wzorców
 enum ENUM_PATTERN_TYPE {
+    PATTERN_NONE,                   // Brak wzorca
     PATTERN_CANDLESTICK,            // Wzorce świecowe
     PATTERN_CHART,                  // Wzorce wykresowe
     PATTERN_TECHNICAL,              // Wzorce techniczne

@@ -74,6 +74,7 @@ struct SystemConfig {
 
 // === GLOBALNA INSTANCJA KONFIGURACJI ===
 // g_config jest zdefiniowany w BohmeMainSystem.mq5
+extern SystemConfig g_config;
 
 // === FUNKCJE POMOCNICZE KONFIGURACJI ===
 

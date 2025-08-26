@@ -282,7 +282,7 @@ public:
         position.realized_profit = 0;
         position.swap = PositionGetDouble(POSITION_SWAP);
         position.commission = 0;
-        position.margin = PositionGetDouble(POSITION_MARGIN);
+        position.margin = 0; // Margin calculation would need AccountInfoDouble(ACCOUNT_MARGIN)
         position.risk_reward_ratio = 0;
         position.drawdown = 0;
         position.max_drawdown = 0;
@@ -347,11 +347,18 @@ public:
     
     // 2. ATR-BASED ZMIENNOŚĆ (praktyczna)
     double CalculateATRVolatility() {
-        double atr = iATR(m_symbol, m_timeframe, 14, 0);
-        double current_price = iClose(m_symbol, m_timeframe, 0);
+        int atr_handle = iATR(m_symbol, m_timeframe, 14);
+        double atr_buffer[1];
+        double price_buffer[1];
         
-        if(current_price > 0) {
-            return (atr / current_price) * 100.0; // Procentowa zmienność
+        if(CopyBuffer(atr_handle, 0, 0, 1, atr_buffer) > 0 && 
+           CopyClose(m_symbol, m_timeframe, 0, 1, price_buffer) > 0) {
+            double atr = atr_buffer[0];
+            double current_price = price_buffer[0];
+            
+            if(current_price > 0) {
+                return (atr / current_price) * 100.0; // Procentowa zmienność
+            }
         }
         
         return 0.0;
@@ -597,12 +604,19 @@ public:
     // 13. MICROSTRUCTURE ENERGY (spread)
     double CalculateMicrostructureEnergy() {
         // Bid-ask spread approximation using ATR
-        double atr = iATR(m_symbol, m_timeframe, 14, 0);
-        double current_price = iClose(m_symbol, m_timeframe, 0);
+        int atr_handle = iATR(m_symbol, m_timeframe, 14);
+        double atr_buffer[1];
+        double price_buffer[1];
         
-        if(current_price > 0) {
-            double spread_ratio = (atr / current_price) * 100.0;
-            return MathMin(100.0, spread_ratio * 1000.0); // Scale up
+        if(CopyBuffer(atr_handle, 0, 0, 1, atr_buffer) > 0 && 
+           CopyClose(m_symbol, m_timeframe, 0, 1, price_buffer) > 0) {
+            double atr = atr_buffer[0];
+            double current_price = price_buffer[0];
+            
+            if(current_price > 0) {
+                double spread_ratio = (atr / current_price) * 100.0;
+                return MathMin(100.0, spread_ratio * 1000.0); // Scale up
+            }
         }
         
         return 0.0;
@@ -895,21 +909,19 @@ public:
         
         // Sprawdzenie każdej pozycji
         for(int i = 0; i < ArraySize(m_positions); i++) {
-            SPosition &position = m_positions[i];
-            
-            if(PositionSelectByTicket(position.ticket)) {
+            if(PositionSelectByTicket(m_positions[i].ticket)) {
                 // Aktualizacja danych pozycji
-                position.current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
-                position.unrealized_profit = PositionGetDouble(POSITION_PROFIT);
-                position.swap = PositionGetDouble(POSITION_SWAP);
-                position.margin = PositionGetDouble(POSITION_MARGIN);
+                m_positions[i].current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
+                m_positions[i].unrealized_profit = PositionGetDouble(POSITION_PROFIT);
+                m_positions[i].swap = PositionGetDouble(POSITION_SWAP);
+                m_positions[i].margin = 0; // Margin calculation would need AccountInfoDouble(ACCOUNT_MARGIN)
                 
                 // Aktualizacja stanu
-                UpdatePositionState(position);
+                UpdatePositionState(m_positions[i]);
                 
                 // Sprawdzenie czy pozycja wymaga zarządzania
-                if(position.is_managed) {
-                    ManageSinglePosition(position);
+                if(m_positions[i].is_managed) {
+                    ManageSinglePosition(m_positions[i]);
                 }
             }
         }
@@ -990,11 +1002,12 @@ public:
             return false;
         }
         
-        SPosition &position = m_positions[index];
-        
         // Zamknięcie pozycji
         if(m_trade.PositionClose(ticket)) {
-            position.state = PM_POSITION_STATE_CLOSED;
+            m_positions[index].state = PM_POSITION_STATE_CLOSED;
+            
+            // Save profit for logging before removing position
+            double profit = m_positions[index].unrealized_profit;
             
             // Callback
             if(m_has_position_closed_callback) {
@@ -1007,7 +1020,7 @@ public:
             }
             ArrayResize(m_positions, ArraySize(m_positions) - 1);
             
-            LogTrade(LOG_COMPONENT_POSITION, "Pozycja zamknięta", position.unrealized_profit, 
+            LogTrade(LOG_COMPONENT_POSITION, "Pozycja zamknięta", profit, 
                     "Ticket: " + IntegerToString(ticket) + ", Powód: " + reason);
             return true;
         } else {
@@ -1083,7 +1096,9 @@ public:
         if(index != -1) {
             return m_positions[index];
         }
-        return SPosition{};
+        SPosition default_position;
+        ZeroMemory(default_position);
+        return default_position;
     }
     
     void GetPositions(SPosition &positions[]) {
@@ -1127,11 +1142,11 @@ public:
         stats.short_positions = 0;
         stats.total_position_value = 0;
         stats.average_position_size = 0;
-        stats.largest_position = 0;
-        stats.smallest_position = 0;
-        stats.total_margin_used = 0;
-        stats.free_margin = 0;
-        stats.last_position_update = m_last_update;
+        stats.max_position_size = 0;
+        stats.min_position_size = 0;
+        stats.unrealized_pnl = 0;
+        stats.realized_pnl = 0;
+        stats.last_position_time = m_last_update;
         
         // Calculate position statistics
         for(int i = 0; i < ArraySize(m_positions); i++) {
@@ -1143,14 +1158,14 @@ public:
             
             double position_value = m_positions[i].volume * m_positions[i].current_price;
             stats.total_position_value += position_value;
-            stats.total_margin_used += m_positions[i].margin;
+            stats.unrealized_pnl += m_positions[i].unrealized_profit;
             
-            if(m_positions[i].volume > stats.largest_position) {
-                stats.largest_position = m_positions[i].volume;
+            if(m_positions[i].volume > stats.max_position_size) {
+                stats.max_position_size = m_positions[i].volume;
             }
             
-            if(stats.smallest_position == 0 || m_positions[i].volume < stats.smallest_position) {
-                stats.smallest_position = m_positions[i].volume;
+            if(stats.min_position_size == 0 || m_positions[i].volume < stats.min_position_size) {
+                stats.min_position_size = m_positions[i].volume;
             }
         }
         
@@ -1240,7 +1255,13 @@ void ReleaseGlobalPositionManager() {
 }
 
 SPosition GetPosition(ulong ticket) {
-    return g_position_manager != NULL ? g_position_manager.GetPosition(ticket) : SPosition{};
+    if(g_position_manager != NULL) {
+        return g_position_manager.GetPosition(ticket);
+    } else {
+        SPosition default_position;
+        ZeroMemory(default_position);
+        return default_position;
+    }
 }
 
 void GetPositions(SPosition &positions[]) {
@@ -1252,11 +1273,23 @@ void GetPositions(SPosition &positions[]) {
 }
 
 SMarketEstimators GetMarketEstimators() {
-    return g_position_manager != NULL ? g_position_manager.GetMarketEstimators() : SMarketEstimators{};
+    if(g_position_manager != NULL) {
+        return g_position_manager.GetMarketEstimators();
+    } else {
+        SMarketEstimators default_estimators;
+        ZeroMemory(default_estimators);
+        return default_estimators;
+    }
 }
 
 SRiskManagement GetRiskManagement() {
-    return g_position_manager != NULL ? g_position_manager.GetRiskManagement() : SRiskManagement{};
+    if(g_position_manager != NULL) {
+        return g_position_manager.GetRiskManagement();
+    } else {
+        SRiskManagement default_risk;
+        ZeroMemory(default_risk);
+        return default_risk;
+    }
 }
 
 bool ClosePosition(ulong ticket, string reason = "") {

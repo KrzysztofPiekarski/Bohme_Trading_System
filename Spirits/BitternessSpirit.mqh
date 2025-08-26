@@ -406,9 +406,17 @@ double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
     double prices[];
     double volumes[];
     
+    // Resize arrays first
+    ArrayResize(prices, bars_count);
+    ArrayResize(volumes, bars_count);
+    ArraySetAsSeries(prices, false);
+    ArraySetAsSeries(volumes, false);
+    
     // Get price and volume data
-    if(CopyClose(Symbol(), timeframe, 0, bars_count, prices) != bars_count ||
-       CopyRealVolume(Symbol(), timeframe, 0, bars_count, volumes) != bars_count) {
+    int price_count = CopyClose(Symbol(), timeframe, 0, bars_count, prices);
+    int volume_count = CopyRealVolume(Symbol(), timeframe, 0, bars_count, volumes);
+    
+    if(price_count <= 0 || volume_count <= 0) {
         return 0.0;
     }
     
@@ -437,7 +445,15 @@ double BitternessSpirit::CalculateVolumeBreakthrough() {
     double volumes[];
     int bars_count = 100;
     
-    if(CopyRealVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes) != bars_count) {
+    // Resize array first
+    ArrayResize(volumes, bars_count);
+    ArraySetAsSeries(volumes, false);
+    
+    int volume_count = -1;
+    if(bars_count > 0) {
+        volume_count = CopyRealVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes);
+    }
+    if(volume_count <= 0) {
         return 0.0;
     }
     

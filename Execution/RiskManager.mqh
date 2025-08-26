@@ -597,12 +597,19 @@ double CRiskManager::CalculateLiquidityRisk() {
     double liquidity_risk = 100.0 - MathMin(100.0, volume_ratio * 50.0);
     
     // Dodanie ryzyka spreadu (uproszczone)
-    double atr = iATR(m_symbol, m_timeframe, 14, 0);
-    double current_price = iClose(m_symbol, m_timeframe, 0);
+    int atr_handle = iATR(m_symbol, m_timeframe, 14);
+    double atr_buffer[1];
+    double price_buffer[1];
     double spread_risk = 0.0;
     
-    if(current_price > 0) {
-        spread_risk = (atr / current_price) * 1000.0; // Scale up
+    if(CopyBuffer(atr_handle, 0, 0, 1, atr_buffer) > 0 && 
+       CopyClose(m_symbol, m_timeframe, 0, 1, price_buffer) > 0) {
+        double atr = atr_buffer[0];
+        double current_price = price_buffer[0];
+        
+        if(current_price > 0) {
+            spread_risk = (atr / current_price) * 1000.0; // Scale up
+        }
     }
     
     return MathMax(0.0, MathMin(100.0, liquidity_risk + spread_risk));
@@ -1269,9 +1276,7 @@ RiskStatistics CRiskManager::GetStatistics() {
     stats.open_positions = 0; // TODO: Implement position counting
     stats.total_exposure = m_risk_analysis.total_exposure;
     stats.max_drawdown = m_risk_analysis.max_drawdown;
-    stats.var_95 = m_risk_analysis.var_95;
-    stats.var_99 = m_risk_analysis.var_99;
-    stats.last_risk_update = m_risk_analysis.last_update;
+    // Note: var_95, var_99, and last_risk_update fields don't exist in RiskStatistics struct
     return stats;
 }
 
@@ -1496,11 +1501,23 @@ void ReleaseGlobalRiskManager() {
 // === FUNKCJE DOSTĘPU GLOBALNEGO ===
 
 SRiskAnalysis GetRiskAnalysis() {
-    return g_risk_manager != NULL ? g_risk_manager.GetRiskAnalysis() : SRiskAnalysis{};
+    if(g_risk_manager != NULL) {
+        return g_risk_manager.GetRiskAnalysis();
+    } else {
+        SRiskAnalysis default_analysis;
+        ZeroMemory(default_analysis);
+        return default_analysis;
+    }
 }
 
 SRiskParameters GetRiskParameters() {
-    return g_risk_manager != NULL ? g_risk_manager.GetRiskParameters() : SRiskParameters{};
+    if(g_risk_manager != NULL) {
+        return g_risk_manager.GetRiskParameters();
+    } else {
+        SRiskParameters default_parameters;
+        ZeroMemory(default_parameters);
+        return default_parameters;
+    }
 }
 
 double GetTotalRiskScore() {

@@ -648,7 +648,7 @@ public:
         Print("   Pobieranie z MQL5 Terminal...");
         
         // Aktualizacja danych z MQL5
-        if(!UpdateCurrentData()) {
+        if(!UpdateAllData()) {
             Print("   ❌ Błąd pobierania danych z MQL5");
             return false;
         }
@@ -1070,15 +1070,33 @@ void ReleaseGlobalDataManager() {
 }
 
 MarketData GetCurrentMarketData() {
-    return g_data_manager != NULL ? g_data_manager.GetCurrentData() : MarketData{};
+    if(g_data_manager != NULL) {
+        return g_data_manager.GetCurrentData();
+    } else {
+        MarketData default_data;
+        ZeroMemory(default_data);
+        return default_data;
+    }
 }
 
 TechnicalIndicators GetCurrentIndicators() {
-    return g_data_manager != NULL ? g_data_manager.GetIndicators() : TechnicalIndicators{};
+    if(g_data_manager != NULL) {
+        return g_data_manager.GetIndicators();
+    } else {
+        TechnicalIndicators default_indicators;
+        ZeroMemory(default_indicators);
+        return default_indicators;
+    }
 }
 
 MarketAnalysis GetCurrentAnalysis() {
-    return g_data_manager != NULL ? g_data_manager.GetAnalysis() : MarketAnalysis{};
+    if(g_data_manager != NULL) {
+        return g_data_manager.GetAnalysis();
+    } else {
+        MarketAnalysis default_analysis;
+        ZeroMemory(default_analysis);
+        return default_analysis;
+    }
 }
 
 #endif // DATA_MANAGER_H

@@ -774,7 +774,9 @@ ExecutionResult ExecuteBuyOrder(double volume, double price, ExecutionParameters
         }
         return g_execution_algorithms.ExecuteOrder(params, ORDER_TYPE_BUY, volume, price);
     }
-    return ExecutionResult{};
+    ExecutionResult default_result;
+    ZeroMemory(default_result);
+    return default_result;
 }
 
 ExecutionResult ExecuteBuyOrder(double volume, double price = 0) {
@@ -782,7 +784,9 @@ ExecutionResult ExecuteBuyOrder(double volume, double price = 0) {
         ExecutionParameters default_params = g_execution_algorithms.GetDefaultParameters();
         return g_execution_algorithms.ExecuteOrder(default_params, ORDER_TYPE_BUY, volume, price);
     }
-    return ExecutionResult{};
+    ExecutionResult default_result;
+    ZeroMemory(default_result);
+    return default_result;
 }
 
 ExecutionResult ExecuteSellOrder(double volume, double price, ExecutionParameters &params) {
@@ -792,7 +796,9 @@ ExecutionResult ExecuteSellOrder(double volume, double price, ExecutionParameter
         }
         return g_execution_algorithms.ExecuteOrder(params, ORDER_TYPE_SELL, volume, price);
     }
-    return ExecutionResult{};
+    ExecutionResult default_result;
+    ZeroMemory(default_result);
+    return default_result;
 }
 
 ExecutionResult ExecuteSellOrder(double volume, double price = 0) {
@@ -800,11 +806,19 @@ ExecutionResult ExecuteSellOrder(double volume, double price = 0) {
         ExecutionParameters default_params = g_execution_algorithms.GetDefaultParameters();
         return g_execution_algorithms.ExecuteOrder(default_params, ORDER_TYPE_SELL, volume, price);
     }
-    return ExecutionResult{};
+    ExecutionResult default_result;
+    ZeroMemory(default_result);
+    return default_result;
 }
 
 ExecutionMarketAnalysis GetMarketAnalysis() {
-    return g_execution_algorithms != NULL ? g_execution_algorithms.GetMarketAnalysis() : ExecutionMarketAnalysis{};
+    if(g_execution_algorithms != NULL) {
+        return g_execution_algorithms.GetMarketAnalysis();
+    } else {
+        ExecutionMarketAnalysis default_analysis;
+        ZeroMemory(default_analysis);
+        return default_analysis;
+    }
 }
 
 string GetExecutionAlgorithmsReport() {

@@ -2142,17 +2142,6 @@ void CleanupGUI() {
     Print("✅ GUI wyczyszczone");
 }
 
-//+------------------------------------------------------------------+
-//| Cleanup Advanced GUI                                              |
-//+------------------------------------------------------------------+
-void CleanupAdvancedGUI() {
-    Print("🎨 Czyszczenie zaawansowanego GUI...");
-    
-    // Cleanup advanced GUI features
-    // This function can be extended with advanced GUI cleanup features
-    
-    Print("✅ Zaawansowane GUI wyczyszczone");
-}
 
 //+------------------------------------------------------------------+
 //| Create Data Tab Elements                                          |
@@ -2236,122 +2225,7 @@ void CreateTestsTabElements() {
                  180, 120, recent_tests, GUI_BACKGROUND_COLOR, GUI_TEXT_COLOR);
 }
 
-//+------------------------------------------------------------------+
-//| Validate System Configuration                                     |
-//+------------------------------------------------------------------+
-bool ValidateSystemConfig(SystemConfig &config) {
-    // Basic validation
-    if(config.confidence_threshold < 0.0 || config.confidence_threshold > 100.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowy próg pewności", "Wartość musi być między 0.0 a 100.0");
-        return false;
-    }
-    
-    if(config.alignment_threshold < 0.0 || config.alignment_threshold > 100.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowy próg wyrównania", "Wartość musi być między 0.0 a 100.0");
-        return false;
-    }
-    
-    if(config.max_risk_per_trade <= 0.0 || config.max_risk_per_trade > 10.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowe maksymalne ryzyko na transakcję", "Wartość musi być między 0.0 a 10.0");
-        return false;
-    }
-    
-    if(config.max_daily_risk <= 0.0 || config.max_daily_risk > 50.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowe maksymalne dzienne ryzyko", "Wartość musi być między 0.0 a 50.0");
-        return false;
-    }
-    
-    // Spirit weights validation
-    if(config.herbe_weight < 0.0 || config.herbe_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Herbe Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.sweetness_weight < 0.0 || config.sweetness_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Sweetness Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.bitterness_weight < 0.0 || config.bitterness_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Bitterness Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.fire_weight < 0.0 || config.fire_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Fire Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.light_weight < 0.0 || config.light_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Light Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.sound_weight < 0.0 || config.sound_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Sound Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    if(config.body_weight < 0.0 || config.body_weight > 2.0) {
-        LogError(LOG_COMPONENT_SYSTEM, "Nieprawidłowa waga Body Spirit", "Wartość musi być między 0.0 a 2.0");
-        return false;
-    }
-    
-    LogInfo(LOG_COMPONENT_SYSTEM, "Konfiguracja systemu zwalidowana", "Wszystkie parametry są poprawne");
-    return true;
-}
 
-//+------------------------------------------------------------------+
-//| Generate Configuration Report                                     |
-//+------------------------------------------------------------------+
-string GenerateConfigReport(SystemConfig &config) {
-    string report = "=== KONFIGURACJA SYSTEMU BÖHMEGO ===\n";
-    report += "Próg pewności: " + DoubleToString(config.confidence_threshold, 1) + "%\n";
-    report += "Próg wyrównania: " + DoubleToString(config.alignment_threshold, 1) + "%\n";
-    report += "Maks. ryzyko na transakcję: " + DoubleToString(config.max_risk_per_trade, 2) + "%\n";
-    report += "Maks. dzienne ryzyko: " + DoubleToString(config.max_daily_risk, 2) + "%\n";
-    report += "Min. rozmiar pozycji: " + DoubleToString(config.min_position_size, 2) + "\n";
-    report += "Maks. rozmiar pozycji: " + DoubleToString(config.max_position_size, 2) + "\n";
-    report += "Uczenie włączone: " + (config.learning_enabled ? "TAK" : "NIE") + "\n";
-    report += "Ewolucja włączona: " + (config.evolution_enabled ? "TAK" : "NIE") + "\n";
-    report += "\n=== AKTYWACJA DUCHÓW ===\n";
-    report += "Herbe Spirit: " + (config.enable_herbe_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.herbe_weight, 1) + ")\n";
-    report += "Sweetness Spirit: " + (config.enable_sweetness_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.sweetness_weight, 1) + ")\n";
-    report += "Bitterness Spirit: " + (config.enable_bitterness_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.bitterness_weight, 1) + ")\n";
-    report += "Fire Spirit: " + (config.enable_fire_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.fire_weight, 1) + ")\n";
-    report += "Light Spirit: " + (config.enable_light_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.light_weight, 1) + ")\n";
-    report += "Sound Spirit: " + (config.enable_sound_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.sound_weight, 1) + ")\n";
-    report += "Body Spirit: " + (config.enable_body_spirit ? "TAK" : "NIE") + " (waga: " + DoubleToString(config.body_weight, 1) + ")\n";
-    report += "\n=== PARAMETRY MASTER CONSCIOUSNESS ===\n";
-    report += "Liczba głów transformer: " + IntegerToString(config.transformer_heads) + "\n";
-    report += "Liczba warstw transformer: " + IntegerToString(config.transformer_layers) + "\n";
-    report += "Rozmiar pamięci systemu: " + IntegerToString(config.system_memory_size) + "\n";
-    report += "Szybkość uczenia: " + DoubleToString(config.learning_rate, 6) + "\n";
-    report += "\n=== PARAMETRY ZARZĄDZANIA RYZYKIEM ===\n";
-    report += "Mnożnik stop loss: " + DoubleToString(config.stop_loss_multiplier, 1) + "\n";
-    report += "Mnożnik take profit: " + DoubleToString(config.take_profit_multiplier, 1) + "\n";
-    report += "Dystans trailing stop: " + DoubleToString(config.trailing_stop_distance, 1) + "\n";
-    report += "Użyj trailing stop: " + (config.use_trailing_stop ? "TAK" : "NIE") + "\n";
-    report += "\n=== PARAMETRY CZASOWE ===\n";
-    report += "Interwał analizy: " + IntegerToString(config.analysis_interval) + " sekund\n";
-    report += "Interwał aktualizacji modelu: " + IntegerToString(config.model_update_interval) + " godzin\n";
-    report += "Interwał ewolucji: " + IntegerToString(config.evolution_interval) + " dni\n";
-    report += "\n=== PARAMETRY DIAGNOSTYKI ===\n";
-    report += "Debug logging: " + (config.enable_debug_logging ? "TAK" : "NIE") + "\n";
-    report += "Performance tracking: " + (config.enable_performance_tracking ? "TAK" : "NIE") + "\n";
-    report += "Maks. rozmiar historii: " + IntegerToString(config.max_history_size) + "\n";
-    report += "\n=== PARAMETRY LOGOWANIA ===\n";
-    report += "System logowania: " + (config.enable_logging_system ? "TAK" : "NIE") + "\n";
-    report += "Poziom logowania: " + IntegerToString(config.logging_level) + "\n";
-    report += "Wyjście do pliku: " + (config.enable_log_file_output ? "TAK" : "NIE") + "\n";
-    report += "Wyjście do konsoli: " + (config.enable_log_console_output ? "TAK" : "NIE") + "\n";
-    report += "Logowanie wydajności: " + (config.enable_log_performance ? "TAK" : "NIE") + "\n";
-    report += "Logowanie ryzyka: " + (config.enable_log_risk ? "TAK" : "NIE") + "\n";
-    report += "Logowanie transakcji: " + (config.enable_log_trade ? "TAK" : "NIE") + "\n";
-    report += "Logowanie AI: " + (config.enable_log_ai ? "TAK" : "NIE") + "\n";
-    report += "Maks. wpisy logów: " + IntegerToString(config.max_log_entries) + "\n";
-    report += "Ścieżka pliku logów: " + config.log_file_path + "\n";
-    
-    return report;
-}
+
+
 

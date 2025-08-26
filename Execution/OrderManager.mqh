@@ -389,7 +389,7 @@ public:
         position.realized_profit = 0;
         position.swap = PositionGetDouble(POSITION_SWAP);
         position.commission = 0;
-        position.margin = PositionGetDouble(POSITION_MARGIN);
+        position.margin = 0; // Margin calculation would need AccountInfoDouble(ACCOUNT_MARGIN)
         position.equity = 0;
         position.risk_reward_ratio = 0;
         position.drawdown = 0;
@@ -625,17 +625,15 @@ public:
             return false;
         }
         
-        SBohmeOrder &order = m_orders[index];
-        
         // Anulowanie zlecenia
         if(m_trade.OrderDelete(ticket)) {
-            order.state = OM_ORDER_STATE_CANCELLED;
-            order.close_time = TimeCurrent();
-            order.comment += " | " + reason;
+            m_orders[index].state = OM_ORDER_STATE_CANCELLED;
+            m_orders[index].close_time = TimeCurrent();
+            m_orders[index].comment += " | " + reason;
             
             // Aktualizacja statystyk
             m_statistics.cancelled_orders++;
-            UpdateOrderStatistics(order, false);
+            UpdateOrderStatistics(m_orders[index], false);
             
             // Callback
             if(m_has_order_cancelled_callback) {
@@ -681,19 +679,19 @@ public:
             return false;
         }
         
-        SBohmePosition &position = m_positions[index];
+
         
         // Zamknięcie pozycji
         if(m_trade.PositionClose(ticket)) {
             // Aktualizacja statystyk
-            if(position.unrealized_profit > 0) {
-                m_statistics.total_profit += position.unrealized_profit;
-                m_statistics.largest_win = MathMax(m_statistics.largest_win, position.unrealized_profit);
+            if(m_positions[index].unrealized_profit > 0) {
+                m_statistics.total_profit += m_positions[index].unrealized_profit;
+                m_statistics.largest_win = MathMax(m_statistics.largest_win, m_positions[index].unrealized_profit);
                 m_statistics.consecutive_wins++;
                 m_statistics.consecutive_losses = 0;
             } else {
-                m_statistics.total_loss += MathAbs(position.unrealized_profit);
-                m_statistics.largest_loss = MathMax(m_statistics.largest_loss, MathAbs(position.unrealized_profit));
+                m_statistics.total_loss += MathAbs(m_positions[index].unrealized_profit);
+                m_statistics.largest_loss = MathMax(m_statistics.largest_loss, MathAbs(m_positions[index].unrealized_profit));
                 m_statistics.consecutive_losses++;
                 m_statistics.consecutive_wins = 0;
             }
@@ -709,7 +707,7 @@ public:
             }
             ArrayResize(m_positions, ArraySize(m_positions) - 1);
             
-            Print("✅ Pozycja zamknięta: ", ticket, " (", DoubleToString(position.unrealized_profit, 2), ")");
+            Print("✅ Pozycja zamknięta: ", ticket, " (", DoubleToString(m_positions[index].unrealized_profit, 2), ")");
             return true;
         } else {
             Print("❌ Błąd zamykania pozycji: ", m_trade.ResultRetcodeDescription());
@@ -744,13 +742,11 @@ public:
     // === AKTUALIZACJA ZLECEŃ ===
     void UpdateOrders() {
         for(int i = 0; i < ArraySize(m_orders); i++) {
-            SBohmeOrder &order = m_orders[i];
-            
-            if(OrderSelect(order.ticket)) {
+            if(OrderSelect(m_orders[i].ticket)) {
                 ENUM_OM_ORDER_STATE new_state = (ENUM_OM_ORDER_STATE)OrderGetInteger(ORDER_STATE);
                 
-                if(new_state != order.state) {
-                    order.state = new_state;
+                if(new_state != m_orders[i].state) {
+                    m_orders[i].state = new_state;
                     
                     if(new_state == OM_ORDER_STATE_FILLED) {
                         // Zlecenie wypełnione
@@ -764,7 +760,7 @@ public:
                         m_statistics.failed_orders++;
                     }
                     
-                    UpdateOrderStatistics(order, false);
+                    UpdateOrderStatistics(m_orders[i], false);
                 }
             }
         }
@@ -773,18 +769,16 @@ public:
     // === AKTUALIZACJA POZYCJI ===
     void UpdatePositions() {
         for(int i = 0; i < ArraySize(m_positions); i++) {
-            SBohmePosition &position = m_positions[i];
-            
-            if(PositionSelectByTicket(position.ticket)) {
-                position.current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
-                position.unrealized_profit = PositionGetDouble(POSITION_PROFIT);
-                position.swap = PositionGetDouble(POSITION_SWAP);
-                position.margin = PositionGetDouble(POSITION_MARGIN);
+            if(PositionSelectByTicket(m_positions[i].ticket)) {
+                m_positions[i].current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
+                m_positions[i].unrealized_profit = PositionGetDouble(POSITION_PROFIT);
+                m_positions[i].swap = PositionGetDouble(POSITION_SWAP);
+                m_positions[i].margin = 0; // Margin calculation would need AccountInfoDouble(ACCOUNT_MARGIN)
                 
                 // Obliczenie drawdown
-                if(position.unrealized_profit < 0) {
-                    position.drawdown = MathAbs(position.unrealized_profit);
-                    position.max_drawdown = MathMax(position.max_drawdown, position.drawdown);
+                if(m_positions[i].unrealized_profit < 0) {
+                    m_positions[i].drawdown = MathAbs(m_positions[i].unrealized_profit);
+                    m_positions[i].max_drawdown = MathMax(m_positions[i].max_drawdown, m_positions[i].drawdown);
                 }
             }
         }
@@ -844,7 +838,9 @@ public:
         if(index != -1) {
             return m_orders[index];
         }
-        return SBohmeOrder{};
+        SBohmeOrder default_order;
+        ZeroMemory(default_order);
+        return default_order;
     }
     
     SBohmePosition GetPosition(ulong ticket) {
@@ -852,7 +848,9 @@ public:
         if(index != -1) {
             return m_positions[index];
         }
-        return SBohmePosition{};
+        SBohmePosition default_position;
+        ZeroMemory(default_position);
+        return default_position;
     }
     
     void GetOrders(SBohmeOrder &orders[]) {
@@ -987,15 +985,33 @@ bool CloseBohmePosition(ulong ticket, string reason = "") {
 }
 
 SBohmeOrder GetBohmeOrder(ulong ticket) {
-    return g_order_manager != NULL ? g_order_manager.GetOrder(ticket) : SBohmeOrder{};
+    if(g_order_manager != NULL) {
+        return g_order_manager.GetOrder(ticket);
+    } else {
+        SBohmeOrder default_order;
+        ZeroMemory(default_order);
+        return default_order;
+    }
 }
 
 SBohmePosition GetBohmePosition(ulong ticket) {
-    return g_order_manager != NULL ? g_order_manager.GetPosition(ticket) : SBohmePosition{};
+    if(g_order_manager != NULL) {
+        return g_order_manager.GetPosition(ticket);
+    } else {
+        SBohmePosition default_position;
+        ZeroMemory(default_position);
+        return default_position;
+    }
 }
 
 SOrderStatistics GetOrderManagerStatistics() {
-    return g_order_manager != NULL ? g_order_manager.GetStatistics() : SOrderStatistics{};
+    if(g_order_manager != NULL) {
+        return g_order_manager.GetStatistics();
+    } else {
+        SOrderStatistics default_stats;
+        ZeroMemory(default_stats);
+        return default_stats;
+    }
 }
 
 string GetOrderManagerReport() {

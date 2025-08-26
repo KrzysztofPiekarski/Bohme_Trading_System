@@ -1317,11 +1317,23 @@ bool HasActiveEconomicEvent() {
 }
 
 EconomicEvent GetCurrentEconomicEvent() {
-    return g_economic_calendar != NULL ? g_economic_calendar.GetCurrentEvent() : EconomicEvent{};
+    if(g_economic_calendar != NULL) {
+        return g_economic_calendar.GetCurrentEvent();
+    } else {
+        EconomicEvent default_event;
+        ZeroMemory(default_event);
+        return default_event;
+    }
 }
 
 EventStrategy GetEventStrategy(int event_id) {
-    return g_economic_calendar != NULL ? g_economic_calendar.GetStrategyForEvent(event_id) : EventStrategy{};
+    if(g_economic_calendar != NULL) {
+        return g_economic_calendar.GetStrategyForEvent(event_id);
+    } else {
+        EventStrategy default_strategy;
+        ZeroMemory(default_strategy);
+        return default_strategy;
+    }
 }
 
 string GetEconomicCalendarReport() {

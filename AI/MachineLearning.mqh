@@ -81,6 +81,11 @@ struct SMLDataset {
     int classes_count;                   // Liczba klas (dla klasyfikacji)
     bool is_time_series;                 // Czy to szereg czasowy
     bool has_weights;                    // Czy ma wagi
+    
+    // Data arrays - flattened for 2D access: features[sample * features_count + feature]
+    double features[];                   // Cechy (spłaszczona macierz 2D)
+    double targets[];                    // Cele/etykiety
+    double weights[];                    // Wagi próbek (opcjonalne)
 };
 
 // Struktura parametrów modelu
@@ -418,8 +423,9 @@ bool CMachineLearning::NormalizeFeatures() {
         double sum = 0.0, sum_sq = 0.0;
         
         for(int sample = 0; sample < m_dataset.samples; sample++) {
-            sum += m_dataset.features[sample][feature];
-            sum_sq += m_dataset.features[sample][feature] * m_dataset.features[sample][feature];
+            int idx = sample * m_dataset.features_count + feature;
+            sum += m_dataset.features[idx];
+            sum_sq += m_dataset.features[idx] * m_dataset.features[idx];
         }
         
         double mean = sum / m_dataset.samples;
@@ -432,7 +438,8 @@ bool CMachineLearning::NormalizeFeatures() {
         
         // Znormalizuj cechy
         for(int sample = 0; sample < m_dataset.samples; sample++) {
-            m_dataset.features[sample][feature] = (m_dataset.features[sample][feature] - mean) / m_feature_stds[feature];
+            int idx = sample * m_dataset.features_count + feature;
+            m_dataset.features[idx] = (m_dataset.features[idx] - mean) / m_feature_stds[feature];
         }
     }
     
@@ -469,7 +476,7 @@ bool CMachineLearning::TrainLinearRegression() {
             // Predykcja
             double prediction = m_bias;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                prediction += m_weights[feature] * m_dataset.features[sample][feature];
+                prediction += m_weights[feature] * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             
             // Błąd
@@ -478,7 +485,7 @@ bool CMachineLearning::TrainLinearRegression() {
             
             // Gradient
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                total_gradient_weights[feature] += error * m_dataset.features[sample][feature];
+                total_gradient_weights[feature] += error * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             total_gradient_bias += error;
         }
@@ -553,7 +560,7 @@ bool CMachineLearning::TrainLogisticRegression() {
             // Predykcja (sigmoid)
             double z = m_bias;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                z += m_weights[feature] * m_dataset.features[sample][feature];
+                z += m_weights[feature] * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             double prediction = 1.0 / (1.0 + MathExp(-z));
             
@@ -564,7 +571,7 @@ bool CMachineLearning::TrainLogisticRegression() {
             // Gradient
             double error = prediction - target;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                total_gradient_weights[feature] += error * m_dataset.features[sample][feature];
+                total_gradient_weights[feature] += error * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             total_gradient_bias += error;
         }
@@ -628,7 +635,7 @@ bool CMachineLearning::TrainRidgeRegression() {
             // Predykcja
             double prediction = m_bias;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                prediction += m_weights[feature] * m_dataset.features[sample][feature];
+                prediction += m_weights[feature] * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             
             // Błąd
@@ -637,7 +644,7 @@ bool CMachineLearning::TrainRidgeRegression() {
             
             // Gradient
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                total_gradient_weights[feature] += error * m_dataset.features[sample][feature];
+                total_gradient_weights[feature] += error * m_dataset.features[sample * m_dataset.features_count + feature];
             }
             total_gradient_bias += error;
         }
@@ -687,19 +694,20 @@ bool CMachineLearning::TrainKMeans() {
     if(k <= 0) k = 3; // Domyślna wartość
     
     // Inicjalizacja centroidów
-    double centroids[][];
-    ArrayResize(centroids, k);
+    double centroids[];
+    ArrayResize(centroids, k * m_dataset.features_count);
     for(int i = 0; i < k; i++) {
-        ArrayResize(centroids[i], m_dataset.features_count);
         // Losowa inicjalizacja
         for(int j = 0; j < m_dataset.features_count; j++) {
-            double min_val = m_dataset.features[0][j];
-            double max_val = m_dataset.features[0][j];
+            int idx0 = 0 * m_dataset.features_count + j;
+            double min_val = m_dataset.features[idx0];
+            double max_val = m_dataset.features[idx0];
             for(int sample = 1; sample < m_dataset.samples; sample++) {
-                if(m_dataset.features[sample][j] < min_val) min_val = m_dataset.features[sample][j];
-                if(m_dataset.features[sample][j] > max_val) max_val = m_dataset.features[sample][j];
+                int idx = sample * m_dataset.features_count + j;
+                if(m_dataset.features[idx] < min_val) min_val = m_dataset.features[idx];
+                if(m_dataset.features[idx] > max_val) max_val = m_dataset.features[idx];
             }
-            centroids[i][j] = min_val + (max_val - min_val) * GenerateRandomDouble(0, 1);
+            centroids[i * m_dataset.features_count + j] = min_val + (max_val - min_val) * GenerateRandomDouble(0, 1);
         }
     }
     
@@ -712,11 +720,28 @@ bool CMachineLearning::TrainKMeans() {
         ArrayResize(assignments, m_dataset.samples);
         
         for(int sample = 0; sample < m_dataset.samples; sample++) {
-            double min_distance = CalculateDistance(m_dataset.features[sample], centroids[0]);
+            // Extract sample features for distance calculation
+            double sample_features[];
+            ArrayResize(sample_features, m_dataset.features_count);
+            for(int f = 0; f < m_dataset.features_count; f++) {
+                sample_features[f] = m_dataset.features[sample * m_dataset.features_count + f];
+            }
+            
+            double first_centroid[];
+            ArrayResize(first_centroid, m_dataset.features_count);
+            for(int f = 0; f < m_dataset.features_count; f++) {
+                first_centroid[f] = centroids[0 * m_dataset.features_count + f];
+            }
+            double min_distance = CalculateDistance(sample_features, first_centroid);
             int best_cluster = 0;
             
             for(int cluster = 1; cluster < k; cluster++) {
-                double distance = CalculateDistance(m_dataset.features[sample], centroids[cluster]);
+                double centroid_features[];
+                ArrayResize(centroid_features, m_dataset.features_count);
+                for(int f = 0; f < m_dataset.features_count; f++) {
+                    centroid_features[f] = centroids[cluster * m_dataset.features_count + f];
+                }
+                double distance = CalculateDistance(sample_features, centroid_features);
                 if(distance < min_distance) {
                     min_distance = distance;
                     best_cluster = cluster;
@@ -726,22 +751,19 @@ bool CMachineLearning::TrainKMeans() {
         }
         
         // Aktualizacja centroidów
-        double new_centroids[][];
-        ArrayResize(new_centroids, k);
+        double new_centroids[];
+        ArrayResize(new_centroids, k * m_dataset.features_count);
         int cluster_sizes[];
         ArrayResize(cluster_sizes, k);
         ArrayInitialize(cluster_sizes, 0);
         
-        for(int cluster = 0; cluster < k; cluster++) {
-            ArrayResize(new_centroids[cluster], m_dataset.features_count);
-            ArrayInitialize(new_centroids[cluster], 0.0);
-        }
+        ArrayInitialize(new_centroids, 0.0);
         
         for(int sample = 0; sample < m_dataset.samples; sample++) {
             int cluster = assignments[sample];
             cluster_sizes[cluster]++;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                new_centroids[cluster][feature] += m_dataset.features[sample][feature];
+                new_centroids[cluster * m_dataset.features_count + feature] += m_dataset.features[sample * m_dataset.features_count + feature];
             }
         }
         
@@ -750,8 +772,8 @@ bool CMachineLearning::TrainKMeans() {
         for(int cluster = 0; cluster < k; cluster++) {
             if(cluster_sizes[cluster] > 0) {
                 for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                    new_centroids[cluster][feature] /= cluster_sizes[cluster];
-                    if(MathAbs(new_centroids[cluster][feature] - centroids[cluster][feature]) > tolerance) {
+                    new_centroids[cluster * m_dataset.features_count + feature] /= cluster_sizes[cluster];
+                    if(MathAbs(new_centroids[cluster * m_dataset.features_count + feature] - centroids[cluster * m_dataset.features_count + feature]) > tolerance) {
                         converged = false;
                     }
                 }
@@ -761,7 +783,7 @@ bool CMachineLearning::TrainKMeans() {
         // Aktualizuj centroidy
         for(int cluster = 0; cluster < k; cluster++) {
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
-                centroids[cluster][feature] = new_centroids[cluster][feature];
+                centroids[cluster * m_dataset.features_count + feature] = new_centroids[cluster * m_dataset.features_count + feature];
             }
         }
         
@@ -772,7 +794,7 @@ bool CMachineLearning::TrainKMeans() {
     ArrayResize(m_weights, k * m_dataset.features_count);
     for(int cluster = 0; cluster < k; cluster++) {
         for(int feature = 0; feature < m_dataset.features_count; feature++) {
-            m_weights[cluster * m_dataset.features_count + feature] = centroids[cluster][feature];
+            m_weights[cluster * m_dataset.features_count + feature] = centroids[cluster * m_dataset.features_count + feature];
         }
     }
     
@@ -860,11 +882,12 @@ int CMachineLearning::PredictClassification(double &features[]) {
     if(!IsModelTrained()) return -1;
     
     switch(m_params.algorithm) {
-        case ML_ALGORITHM_LOGISTIC_REGRESSION:
+        case ML_ALGORITHM_LOGISTIC_REGRESSION: {
             double probability = PredictProbability(features, 1);
             return probability > 0.5 ? 1 : 0;
+        }
             
-        case ML_ALGORITHM_KMEANS:
+        case ML_ALGORITHM_KMEANS: {
             // Znajdź najbliższy centroid
             int k = (int)m_params.regularization_strength;
             if(k <= 0) k = 3;
@@ -886,6 +909,7 @@ int CMachineLearning::PredictClassification(double &features[]) {
                 }
             }
             return best_cluster;
+        }
             
         default:
             return 0;
@@ -897,7 +921,7 @@ double CMachineLearning::PredictProbability(double &features[], int class_index)
     if(!IsModelTrained()) return 0.0;
     
     switch(m_params.algorithm) {
-        case ML_ALGORITHM_LOGISTIC_REGRESSION:
+        case ML_ALGORITHM_LOGISTIC_REGRESSION: {
             double z = m_bias;
             for(int feature = 0; feature < m_dataset.features_count; feature++) {
                 if(feature < ArraySize(features)) {
@@ -910,6 +934,7 @@ double CMachineLearning::PredictProbability(double &features[], int class_index)
             }
             double probability = 1.0 / (1.0 + MathExp(-z));
             return class_index == 1 ? probability : (1.0 - probability);
+        }
             
         default:
             return 0.5;

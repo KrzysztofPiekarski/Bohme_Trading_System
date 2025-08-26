@@ -390,8 +390,8 @@ FireSpiritAI::FireSpiritAI() {
     m_advanced_ai = new CFireSpiritAI();
     
     // Initialize networks
-    m_regime_detector = new CConvolutionalNet(50, 5); // 50 inputs, 5 regimes
-    m_volatility_lstm = new CLocalLSTMNetwork(20, 64, 1);  // 20 lookback, 64 hidden, 1 output
+    // m_regime_detector = new CConvolutionalNet(50, 5); // 50 inputs, 5 regimes - disabled until class is available
+    // m_volatility_lstm = new CLocalLSTMNetwork(20, 64, 1);  // 20 lookback, 64 hidden, 1 output - disabled until class is available
     
     // Initialize adaptive thresholds
     m_volatility_threshold_low = 0.01;   // 1% daily volatility
@@ -441,12 +441,12 @@ bool FireSpiritAI::Initialize() {
     }
     
     // Initialize networks
-    if(m_regime_detector != NULL) {
-        m_regime_detector.Initialize();
+    if(CheckPointer(m_regime_detector) == POINTER_DYNAMIC) {
+        // m_regime_detector.Initialize(); // Initialize if method exists
     }
     
-    if(m_volatility_lstm != NULL) {
-        m_volatility_lstm.Initialize();
+    if(CheckPointer(m_volatility_lstm) == POINTER_DYNAMIC) {
+        // m_volatility_lstm.Initialize(); // Initialize if method exists  
     }
     
     LogInfo(LOG_COMPONENT_FIRE, "Fire Spirit AI zainicjalizowany", "Wszystkie komponenty gotowe");
@@ -506,8 +506,13 @@ double FireSpiritAI::GetFireIntensity() {
     // Fallback do oryginalnej implementacji
     // Multiple volatility measures
     double realized_vol = CalculateRealizedVolatility();
-    double returns_garch[]; int bars_garch = 20; 
-    if(GetReturns(returns_garch, bars_garch) < bars_garch) returns_garch = returns_garch; // keep default
+    double returns_garch[]; 
+    int bars_garch = 20; 
+    ArrayResize(returns_garch, bars_garch);
+    if(GetReturns(returns_garch, bars_garch) < bars_garch) {
+        // Handle insufficient data - keep empty array
+        ArrayInitialize(returns_garch, 0.0);
+    }
     double garch_vol = CalculateGARCHVolatility(returns_garch, 20);
     double parkinson_vol = CalculateParkinsonVolatility();
     double yang_zhang_vol = CalculateYangZhangVolatility();
@@ -709,8 +714,10 @@ double FireSpiritAI::CalculatePriceEnergy() {
 double FireSpiritAI::CalculateVolumeEnergy() {
     double volumes[];
     int bars = 50;
+    ArrayResize(volumes, bars);
+    ArraySetAsSeries(volumes, false);
     
-    if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, bars, volumes) != bars) {
+    if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, bars, volumes) <= 0) {
         return 0.0;
     }
     
@@ -806,8 +813,17 @@ double FireSpiritAI::GetVolatilityForecast(int periods_ahead) {
         input_sequence[i] = m_volatility_history[287 - 19 + i]; // Last 20 periods
     }
     
-    // LSTM prediction
-    double forecast = m_volatility_lstm.Predict(input_sequence);
+    // LSTM prediction (fallback to simple calculation when LSTM is disabled)
+    double forecast = 0.0;
+    if(CheckPointer(m_volatility_lstm) == POINTER_DYNAMIC) {
+        // forecast = m_volatility_lstm.Predict(input_sequence); // Disabled until class is available
+        // Fallback: use average of recent volatility
+        double sum = 0.0;
+        for(int i = 0; i < 20; i++) {
+            sum += input_sequence[i];
+        }
+        forecast = sum / 20.0;
+    }
     
     // Multi-step ahead prediction
     if(periods_ahead > 1) {
@@ -819,7 +835,11 @@ double FireSpiritAI::GetVolatilityForecast(int periods_ahead) {
             }
             input_sequence[19] = forecast;
             
-            forecast = m_volatility_lstm.Predict(input_sequence);
+            if(CheckPointer(m_volatility_lstm) == POINTER_DYNAMIC) {
+                // forecast = m_volatility_lstm.Predict(input_sequence); // Disabled until class is available
+                // Fallback: decay the forecast slightly for future periods
+                forecast = forecast * 0.95;
+            }
         }
     }
     
@@ -890,8 +910,10 @@ double FireSpiritAI::CalculateRealizedVolatility() {
 double FireSpiritAI::CalculateMomentumEnergy() {
     double prices[];
     int bars = 10;
+    ArrayResize(prices, bars);
+    ArraySetAsSeries(prices, false);
     
-    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, bars, prices) != bars) {
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, bars, prices) <= 0) {
         return 0.0;
     }
     
@@ -1045,8 +1067,13 @@ double FireSpiritAI::GetEnergyExhaustionProbability() {
 // Get Volatility Breakout Probability
 double FireSpiritAI::GetVolatilityBreakoutProbability() {
     double current_vol = CalculateRealizedVolatility();
-    double returns2[]; int bars2 = 20; 
-    if(GetReturns(returns2, bars2) < bars2) returns2 = returns2; 
+    double returns2[]; 
+    int bars2 = 20; 
+    ArrayResize(returns2, bars2);
+    if(GetReturns(returns2, bars2) < bars2) {
+        // Handle insufficient data
+        return 0.0;
+    } 
     double garch_vol = CalculateGARCHVolatility(returns2, 20);
     double vol_forecast = GetVolatilityForecast(5);
     

@@ -479,7 +479,8 @@ void CalculatePACF(double &data[], double &pacf[], int max_lag) {
     
     // Obliczenie pozostałych wartości PACF metodą Durbina-Levinsona
     for(int k = 2; k <= max_lag; k++) {
-        double phi[k];
+        double phi[];
+        ArrayResize(phi, k);
         ArrayInitialize(phi, 0.0);
         
         // Inicjalizacja
@@ -1451,21 +1452,22 @@ double NumericalSecondDerivative(double &function_values[], int index, double h 
 }
 
 // Funkcja do rozwiązywania układu równań liniowych metodą Gaussa
-bool SolveLinearSystem(double &matrix[][], double &vector[], double &solution[]) {
-    int n = ArraySize(vector);
-    int rows = ArrayRange(matrix, 0);
-    int cols = ArrayRange(matrix, 1);
+bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double &solution[]) {
+    int n = ArraySize(input_vector);
+    int rows = ArrayRange(coeff_matrix, 0);
+    int cols = ArrayRange(coeff_matrix, 1);
     
     if(rows != n || cols != n) return false;
     
     // Kopia macierzy i wektora
     double A[][];
+    ArrayResize(A, rows);
     ArrayResize(A, rows, cols);
-    ArrayCopy(A, matrix);
+    ArrayCopy(A, coeff_matrix);
     
     double b[];
     ArrayResize(b, n);
-    ArrayCopy(b, vector);
+    ArrayCopy(b, input_vector);
     
     // Eliminacja Gaussa
     for(int k = 0; k < n - 1; k++) {
@@ -1513,9 +1515,9 @@ bool SolveLinearSystem(double &matrix[][], double &vector[], double &solution[])
 }
 
 // Funkcja do obliczania wyznacznika macierzy
-double MatrixDeterminant(double &matrix[][]) {
-    int rows = ArrayRange(matrix, 0);
-    int cols = ArrayRange(matrix, 1);
+double MatrixDeterminant(double &input_matrix[][]) {
+    int rows = ArrayRange(input_matrix, 0);
+    int cols = ArrayRange(input_matrix, 1);
     
     if(rows != cols) return 0.0;
     
@@ -1523,8 +1525,9 @@ double MatrixDeterminant(double &matrix[][]) {
     
     // Kopia macierzy
     double A[][];
+    ArrayResize(A, n);
     ArrayResize(A, n, n);
-    ArrayCopy(A, matrix);
+    ArrayCopy(A, input_matrix);
     
     double det = 1.0;
     
@@ -1565,29 +1568,29 @@ double MatrixDeterminant(double &matrix[][]) {
 }
 
 // Funkcja do obliczania macierzy odwrotnej
-bool MatrixInverse(double &matrix[][], double &inverse[][]) {
-    int rows = ArrayRange(matrix, 0);
-    int cols = ArrayRange(matrix, 1);
+bool MatrixInverse(double &input_matrix[][], double &inverse[][]) {
+    int rows = ArrayRange(input_matrix, 0);
+    int cols = ArrayRange(input_matrix, 1);
     
     if(rows != cols) return false;
     
     int n = rows;
     
     // Macierz rozszerzona [A|I]
-    double augmented[][];
-    ArrayResize(augmented, n, 2 * n);
+    double augmented[];
+    ArrayResize(augmented, n * 2 * n);
     
     // Kopiowanie macierzy A
     for(int i = 0; i < n; i++) {
         for(int j = 0; j < n; j++) {
-            augmented[i][j] = matrix[i][j];
+            augmented[i * (2 * n) + j] = input_matrix[i][j];
         }
     }
     
     // Dodanie macierzy jednostkowej
     for(int i = 0; i < n; i++) {
         for(int j = 0; j < n; j++) {
-            augmented[i][j + n] = (i == j) ? 1.0 : 0.0;
+            augmented[i * (2 * n) + (j + n)] = (i == j) ? 1.0 : 0.0;
         }
     }
     
@@ -1596,7 +1599,7 @@ bool MatrixInverse(double &matrix[][], double &inverse[][]) {
         // Znalezienie elementu głównego
         int max_row = k;
         for(int i = k + 1; i < n; i++) {
-            if(MathAbs(augmented[i][k]) > MathAbs(augmented[max_row][k])) {
+            if(MathAbs(augmented[i * (2 * n) + k]) > MathAbs(augmented[max_row * (2 * n) + k])) {
                 max_row = i;
             }
         }
@@ -1604,26 +1607,26 @@ bool MatrixInverse(double &matrix[][], double &inverse[][]) {
         // Zamiana wierszy
         if(max_row != k) {
             for(int j = k; j < 2 * n; j++) {
-                double temp = augmented[k][j];
-                augmented[k][j] = augmented[max_row][j];
-                augmented[max_row][j] = temp;
+                double temp = augmented[k * (2 * n) + j];
+                augmented[k * (2 * n) + j] = augmented[max_row * (2 * n) + j];
+                augmented[max_row * (2 * n) + j] = temp;
             }
         }
         
         // Normalizacja wiersza
-        double pivot = augmented[k][k];
+        double pivot = augmented[k * (2 * n) + k];
         if(MathAbs(pivot) < 1e-10) return false; // Macierz osobliwa
         
         for(int j = k; j < 2 * n; j++) {
-            augmented[k][j] /= pivot;
+            augmented[k * (2 * n) + j] /= pivot;
         }
         
         // Eliminacja
         for(int i = 0; i < n; i++) {
             if(i != k) {
-                double factor = augmented[i][k];
+                double factor = augmented[i * (2 * n) + k];
                 for(int j = k; j < 2 * n; j++) {
-                    augmented[i][j] -= factor * augmented[k][j];
+                    augmented[i * (2 * n) + j] -= factor * augmented[k * (2 * n) + j];
                 }
             }
         }
@@ -1633,7 +1636,7 @@ bool MatrixInverse(double &matrix[][], double &inverse[][]) {
     ArrayResize(inverse, n, n);
     for(int i = 0; i < n; i++) {
         for(int j = 0; j < n; j++) {
-            inverse[i][j] = augmented[i][j + n];
+            inverse[i][j] = augmented[i * (2 * n) + (j + n)];
         }
     }
     
@@ -1641,9 +1644,9 @@ bool MatrixInverse(double &matrix[][], double &inverse[][]) {
 }
 
 // Funkcja do obliczania wartości własnych (uproszczona - tylko największa)
-double MatrixLargestEigenvalue(double &matrix[][], int max_iterations = 100) {
-    int rows = ArrayRange(matrix, 0);
-    int cols = ArrayRange(matrix, 1);
+double MatrixLargestEigenvalue(double &input_matrix[][], int max_iterations = 100) {
+    int rows = ArrayRange(input_matrix, 0);
+    int cols = ArrayRange(input_matrix, 1);
     
     if(rows != cols) return 0.0;
     
@@ -1666,7 +1669,7 @@ double MatrixLargestEigenvalue(double &matrix[][], int max_iterations = 100) {
         for(int i = 0; i < n; i++) {
             Av[i] = 0.0;
             for(int j = 0; j < n; j++) {
-                Av[i] += matrix[i][j] * v[j];
+                Av[i] += input_matrix[i][j] * v[j];
             }
         }
         
