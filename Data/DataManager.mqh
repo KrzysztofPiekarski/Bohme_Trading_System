@@ -1052,7 +1052,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-CDataManager* g_data_manager = NULL;
+// g_data_manager is declared in BohmeMainSystem.mq5
+extern CDataManager* g_data_manager;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalDataManager(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

@@ -138,7 +138,9 @@ double HerbeQualityAI::GetFundamentalConflictStrength() {
     
     // 4. Seasonal factors
     datetime current_time = TimeCurrent();
-    inputs[idx++] = MathSin(2 * M_PI * TimeDay(current_time) / 365.0); // Seasonal component
+    MqlDateTime mdt;
+    TimeToStruct(current_time, mdt);
+    inputs[idx++] = MathSin(2 * M_PI * mdt.day_of_year / 365.0); // Seasonal component
     
     // 5. Market structure data
     inputs[idx++] = CalculateMarketStructureTension();
@@ -280,8 +282,10 @@ double HerbeQualityAI::GetGeopoliticalTension() {
     
     // Dodanie komponentów sezonowych i cyklicznych
     datetime current_time = TimeCurrent();
-    double seasonal_factor = MathSin(2 * M_PI * TimeDay(current_time) / 365.0) * 0.2;
-    double cyclical_factor = MathSin(2 * M_PI * TimeHour(current_time) / 24.0) * 0.1;
+    MqlDateTime mdt;
+    TimeToStruct(current_time, mdt);
+    double seasonal_factor = MathSin(2 * M_PI * mdt.day_of_year / 365.0) * 0.2;
+    double cyclical_factor = MathSin(2 * M_PI * mdt.hour / 24.0) * 0.1;
     
     return MathMax(0.0, MathMin(1.0, base_tension + seasonal_factor + cyclical_factor));
 }

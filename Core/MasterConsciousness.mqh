@@ -18,57 +18,10 @@ enum ENUM_SYSTEM_STATE {
     SYSTEM_TRANSCENDENT    // System w stanie transcendencji
 };
 
-enum ENUM_MARKET_PHASE {
-    PHASE_BULLISH_TENSION,  // Napięcie wzrostowe
-    PHASE_BEARISH_TENSION,  // Napięcie spadkowe
-    PHASE_NEUTRAL,          // Neutralne
-    PHASE_TRANSITION        // Przejście
-};
+// Enums are defined in AI/AIEnums.mqh
 
-enum ENUM_MOMENTUM_PHASE {
-    MOMENTUM_ACCUMULATION,  // Akumulacja
-    MOMENTUM_BREAKTHROUGH,  // Przełamanie
-    MOMENTUM_ACCELERATION,  // Przyspieszenie
-    MOMENTUM_EXHAUSTION     // Wyczerpanie
-};
-
-enum ENUM_SIGNAL_QUALITY {
-    SIGNAL_WEAK,           // Słaby sygnał
-    SIGNAL_MODERATE,       // Umiarkowany sygnał
-    SIGNAL_STRONG,         // Silny sygnał
-    SIGNAL_CRYSTAL_CLEAR   // Krystalicznie jasny
-};
-
-enum ENUM_HARMONY_STATE {
-    HARMONY_DISSONANT,     // Dysharmonia
-    HARMONY_BALANCED,      // Zrównoważona
-    HARMONY_RESONANT,      // Rezonansowa
-    HARMONY_TRANSCENDENT   // Transcendentna
-};
-
-enum ENUM_ENERGY_STATE {
-    ENERGY_DORMANT,        // Energia uśpiona
-    ENERGY_AWAKENING,      // Energia się budzi
-    ENERGY_ACTIVE,         // Energia aktywna
-    ENERGY_INTENSE,        // Energia intensywna
-    ENERGY_EXHAUSTED       // Energia wyczerpana
-};
-
-// Brakujące struktury
-struct SSignalData {
-    double optimal_price;
-    datetime optimal_time;
-    double strength;
-    ENUM_SIGNAL_QUALITY quality;
-    string description;
-};
-
-struct SCycle {
-    ENUM_TIMEFRAMES type;
-    double phase;
-    double strength;
-    datetime next_peak;
-};
+// SSignalData is defined in LightSpirit.mqh
+// SCycle is defined in SoundSpirit.mqh
 
 // STradeExecution przeniesiony do Core/TradeTypes.mqh
 
@@ -168,19 +121,12 @@ struct SAIPrediction {
     double volatility_regime_score;        // Wynik reżimu volatilności
 };
 
-// Brakujące klasy (deklaracje)
-class CTransformerNet {
-public:
-    CTransformerNet(int inputs, int heads, int layers);
-    double ProcessState(double &inputs[]);
-    double ValidateDecision(double &inputs[]);
-    void UpdateWeights(double &data[][], double &targets[], int count);
-};
+// CTransformerNet is defined in LightSpirit.mqh
 
 class CSystemMemory {
 public:
     CSystemMemory(int size);
-    void StoreState(SMarketState state, STradeDecision decision);
+    void StoreState(SMarketState &state, STradeDecision &decision);
     void RetrieveState(int index, SMarketState &state, STradeDecision &decision);
 };
 
@@ -191,20 +137,8 @@ public:
     bool IsEvolutionNeeded();
 };
 
-// Dodatkowe deklaracje metod dla duchów (placeholdery)
-class HerbeQualityAI {
-public:
-    double GetFundamentalConflictStrength();
-    ENUM_MARKET_PHASE GetMarketPhase();
-    void UpdateNeuralNetwork();
-};
-
-class SentimentAI {
-public:
-    double GetHarmonyIndex();
-    double GetSentimentMomentum();
-    void UpdateSentimentModels();
-};
+// HerbeQualityAI is defined in HerbeSpirit.mqh
+// SentimentAI is defined in SentimentAnalyzer.mqh
 
 // All spirit classes are imported from their respective .mqh files
 
@@ -296,17 +230,17 @@ private:
     
     // Private methods
     bool ValidateSystemIntegrity();
-    void UpdateSystemMemory(SMarketState state, STradeDecision decision);
+    void UpdateSystemMemory(SMarketState &state, STradeDecision &decision);
     double CalculateSystemEntropy();
     void PerformSystemEvolution();
     
     // Helper functions
     bool AreSpiritsComplementary(int spirit1, int spirit2, double value1, double value2);
-    void PrepareMasterConsciousnessInputs(double &inputs[], SMarketState state);
-    void PrepareFinalDecisionInputs(double &inputs[], STradeDecision decision, SMarketState state);
+    void PrepareMasterConsciousnessInputs(double &inputs[], SMarketState &state);
+    void PrepareFinalDecisionInputs(double &inputs[], STradeDecision &decision, SMarketState &state);
     void PrepareSystemLearningData(double &data[][], double &targets[]);
     double CalculateOptimalStopDistance(double signal_strength);
-    STradeExecution ConvertDecisionToSignal(STradeDecision decision);
+    STradeExecution ConvertDecisionToSignal(STradeDecision &decision);
     string EnumToString(ENUM_TRADE_ACTION action);
     string GetSystemStateString(ENUM_SYSTEM_STATE state);
     
@@ -891,7 +825,7 @@ bool BohmeAISystem::AreSpiritsComplementary(int spirit1, int spirit2, double val
     return false;
 }
 
-void BohmeAISystem::PrepareMasterConsciousnessInputs(double &inputs[], SMarketState state) {
+void BohmeAISystem::PrepareMasterConsciousnessInputs(double &inputs[], SMarketState &state) {
     ArrayResize(inputs, 196);
     int index = 0;
     
@@ -931,7 +865,7 @@ void BohmeAISystem::PrepareMasterConsciousnessInputs(double &inputs[], SMarketSt
     }
 }
 
-void BohmeAISystem::PrepareFinalDecisionInputs(double &inputs[], STradeDecision decision, SMarketState state) {
+void BohmeAISystem::PrepareFinalDecisionInputs(double &inputs[], STradeDecision &decision, SMarketState &state) {
     ArrayResize(inputs, 50);
     int index = 0;
     
@@ -980,7 +914,7 @@ double BohmeAISystem::CalculateOptimalStopDistance(double signal_strength) {
     return base_stop * (1.0 + strength_factor);
 }
 
-STradeExecution BohmeAISystem::ConvertDecisionToSignal(STradeDecision decision) {
+STradeExecution BohmeAISystem::ConvertDecisionToSignal(STradeDecision &decision) {
     STradeExecution execution;
     execution.action = decision.action;
     execution.price = decision.entry_price;
@@ -1029,7 +963,7 @@ bool BohmeAISystem::ValidateSystemIntegrity() {
     return true;
 }
 
-void BohmeAISystem::UpdateSystemMemory(SMarketState state, STradeDecision decision) {
+void BohmeAISystem::UpdateSystemMemory(SMarketState &state, STradeDecision &decision) {
     if(m_system_memory != NULL) {
         m_system_memory.StoreState(state, decision);
     }
@@ -1055,96 +989,15 @@ void BohmeAISystem::PerformSystemEvolution() {
     }
 }
 
-// Funkcja główna systemu - OnTick
-void OnTick() {
-    static datetime last_analysis = 0;
-    static BohmeAISystem* bohme_system = NULL;
-    
-    // Inicjalizacja systemu przy pierwszym wywołaniu
-    if(bohme_system == NULL) {
-        bohme_system = new BohmeAISystem();
-        if(!bohme_system.InitializeSystem()) {
-            Print("❌ Błąd inicjalizacji systemu Böhmego!");
-            return;
-        }
-    }
-    
-    datetime current_time = TimeCurrent();
-    
-    // Analiza co minutę (może być dostosowane)
-    if(current_time - last_analysis >= 60) {
-        last_analysis = current_time;
-        
-        // Główny cykl systemu
-        SMarketState state = bohme_system.AnalyzeMarketState();
-        
-        // Sprawdź czy warunki sprzyjają podejmowaniu decyzji
-        if(state.system_confidence > 70.0 && 
-           (state.all_spirits_aligned || state.system_state == SYSTEM_TRANSCENDENT)) {
-            
-            STradeDecision decision = bohme_system.MakeTradeDecision();
-            
-            if(decision.action != ACTION_NONE) {
-                // Wykonaj decyzję
-                STradeExecution execution = bohme_system.m_spirit_body.OptimizeExecution(ConvertDecisionToSignal(decision));
-                
-                if(bohme_system.m_spirit_body.ExecuteTrade(execution)) {
-                    Print("✅ Transakcja wykonana zgodnie z wolą Duchów!");
-                }
-                else {
-                    Print("❌ Błąd wykonania - Duchy nie były zadowolone...");
-                }
-            }
-        }
-        
-        // Zarządzanie otwartymi pozycjami
-        if(bohme_system.m_spirit_body != NULL) {
-            bohme_system.m_spirit_body.ManageOpenPositions();
-        }
-        
-        // Aktualizacja modeli (co godzinę)
-        if(current_time % 3600 == 0) {
-            bohme_system.UpdateModels();
-        }
-        
-        // Diagnostyka systemu (co dzień)
-        if(TimeHour(current_time) == 0 && TimeMinute(current_time) == 0) {
-            bohme_system.DiagnoseSystemHealth();
-            string report = bohme_system.GenerateSystemReport();
-            Print("📊 DZIENNY RAPORT SYSTEMU:");
-            Print(report);
-        }
-    }
-}
+// OnTick function is implemented in BohmeMainSystem.mq5
 
-// Implementacje brakujących klas
-CTransformerNet::CTransformerNet(int inputs, int heads, int layers) {
-    // Placeholder implementation
-}
-
-double CTransformerNet::ProcessState(double &inputs[]) {
-    // Placeholder implementation
-    double sum = 0.0;
-    for(int i = 0; i < ArraySize(inputs); i++) {
-        sum += inputs[i];
-    }
-    return MathMax(0.0, MathMin(1.0, sum / ArraySize(inputs)));
-}
-
-double CTransformerNet::ValidateDecision(double &inputs[]) {
-    // Placeholder implementation
-    return 0.7 + (MathRand() % 30) / 100.0; // 0.7-1.0
-}
-
-void CTransformerNet::UpdateWeights(double &data[][], double &targets[], int count) {
-    // Placeholder implementation
-}
+// CTransformerNet implementations are in LightSpirit.mqh
 
 CSystemMemory::CSystemMemory(int size) {
     // Placeholder implementation
 }
 
-void CSystemMemory::StoreState(SMarketState state, STradeDecision decision) {
+void CSystemMemory::StoreState(SMarketState &state, STradeDecision &decision) {
     // Placeholder implementation
 }
 

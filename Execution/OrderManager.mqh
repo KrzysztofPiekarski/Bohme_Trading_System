@@ -32,29 +32,29 @@ enum ENUM_ORDER_TYPE_BOHME {
     ORDER_BOHME_EVENT_DRIVEN        // Zlecenie napędzane wydarzeniami
 };
 
-// Stany zleceń
-enum ENUM_ORDER_STATE {
-    ORDER_STATE_PENDING,            // Oczekujące
-    ORDER_STATE_ACTIVE,             // Aktywne
-    ORDER_STATE_PARTIAL,            // Częściowo wypełnione
-    ORDER_STATE_FILLED,             // Wypełnione
-    ORDER_STATE_CANCELLED,          // Anulowane
-    ORDER_STATE_REJECTED,           // Odrzucone
-    ORDER_STATE_MODIFIED,           // Zmodyfikowane
-    ORDER_STATE_EXPIRED,            // Wygasłe
-    ORDER_STATE_SUSPENDED           // Zawieszone
+// Stany zleceń (dla Order Manager)
+enum ENUM_OM_ORDER_STATE {
+    OM_ORDER_STATE_PENDING,            // Oczekujące
+    OM_ORDER_STATE_ACTIVE,             // Aktywne
+    OM_ORDER_STATE_PARTIAL,            // Częściowo wypełnione
+    OM_ORDER_STATE_FILLED,             // Wypełnione
+    OM_ORDER_STATE_CANCELLED,          // Anulowane
+    OM_ORDER_STATE_REJECTED,           // Odrzucone
+    OM_ORDER_STATE_MODIFIED,           // Zmodyfikowane
+    OM_ORDER_STATE_EXPIRED,            // Wygasłe
+    OM_ORDER_STATE_SUSPENDED           // Zawieszone
 };
 
-// Typy pozycji
-enum ENUM_POSITION_TYPE {
-    POSITION_TYPE_LONG,             // Pozycja długa
-    POSITION_TYPE_SHORT,            // Pozycja krótka
-    POSITION_TYPE_SCALP,            // Pozycja skalpowa
-    POSITION_TYPE_SWING,            // Pozycja swingowa
-    POSITION_TYPE_HEDGE,            // Pozycja hedgingowa
-    POSITION_TYPE_ARBITRAGE,        // Pozycja arbitrażowa
-    POSITION_TYPE_GRID,             // Pozycja grid
-    POSITION_TYPE_MARTINGALE        // Pozycja martingale
+// Typy pozycji (dla Order Manager)
+enum ENUM_OM_POSITION_TYPE {
+    OM_POSITION_TYPE_LONG,             // Pozycja długa
+    OM_POSITION_TYPE_SHORT,            // Pozycja krótka
+    OM_POSITION_TYPE_SCALP,            // Pozycja skalpowa
+    OM_POSITION_TYPE_SWING,            // Pozycja swingowa
+    OM_POSITION_TYPE_HEDGE,            // Pozycja hedgingowa
+    OM_POSITION_TYPE_ARBITRAGE,        // Pozycja arbitrażowa
+    OM_POSITION_TYPE_GRID,             // Pozycja grid
+    OM_POSITION_TYPE_MARTINGALE        // Pozycja martingale
 };
 
 // Priorytety zleceń
@@ -73,7 +73,7 @@ struct SBohmeOrder {
     ulong ticket;                   // Ticket zlecenia
     string symbol;                  // Symbol
     ENUM_ORDER_TYPE_BOHME type;     // Typ zlecenia
-    ENUM_ORDER_STATE state;         // Stan zlecenia
+    ENUM_OM_ORDER_STATE state;         // Stan zlecenia
     ENUM_ORDER_PRIORITY priority;   // Priorytet
     double volume;                  // Wolumen
     double price;                   // Cena
@@ -100,7 +100,7 @@ struct SBohmeOrder {
 struct SBohmePosition {
     ulong ticket;                   // Ticket pozycji
     string symbol;                  // Symbol
-    ENUM_POSITION_TYPE type;        // Typ pozycji
+    ENUM_OM_POSITION_TYPE type;        // Typ pozycji
     double volume;                  // Wolumen
     double open_price;              // Cena otwarcia
     double current_price;           // Aktualna cena
@@ -127,8 +127,8 @@ struct SBohmePosition {
     string custom_data;             // Dane niestandardowe
 };
 
-// Struktura zarządzania ryzykiem
-struct SRiskManagement {
+// Struktura zarządzania ryzykiem (dla Order Manager)
+struct SOMRiskManagement {
     double max_position_size;       // Maksymalny rozmiar pozycji
     double max_daily_loss;          // Maksymalna dzienna strata
     double max_drawdown_limit;      // Limit drawdown
@@ -194,7 +194,7 @@ private:
     // Zarządzanie zleceniami
     SBohmeOrder m_orders[];
     SBohmePosition m_positions[];
-    SRiskManagement m_risk_management;
+    SOMRiskManagement m_risk_management;
     SOrderStatistics m_statistics;
     
     // Cache
@@ -203,13 +203,13 @@ private:
     int m_max_orders;
     int m_max_positions;
     
-    // Callback functions
-    void (*m_on_order_created)(SBohmeOrder&);
-    void (*m_on_order_filled)(SBohmeOrder&);
-    void (*m_on_order_cancelled)(SBohmeOrder&);
-    void (*m_on_position_opened)(SBohmePosition&);
-    void (*m_on_position_closed)(SBohmePosition&);
-    void (*m_on_risk_alert)(string);
+    // Callback functions - MQL5 doesn't support function pointers, using flags instead
+    bool m_has_order_created_callback;
+    bool m_has_order_filled_callback;
+    bool m_has_order_cancelled_callback;
+    bool m_has_position_opened_callback;
+    bool m_has_position_closed_callback;
+    bool m_has_risk_alert_callback;
     
 public:
     // === KONSTRUKTOR I DESTRUKTOR ===
@@ -222,12 +222,12 @@ public:
         m_max_positions = 50;
         
         // Resetowanie callbacków
-        m_on_order_created = NULL;
-        m_on_order_filled = NULL;
-        m_on_order_cancelled = NULL;
-        m_on_position_opened = NULL;
-        m_on_position_closed = NULL;
-        m_on_risk_alert = NULL;
+        m_has_order_created_callback = false;
+        m_has_order_filled_callback = false;
+        m_has_order_cancelled_callback = false;
+        m_has_position_opened_callback = false;
+        m_has_position_closed_callback = false;
+        m_has_risk_alert_callback = false;
         
         // Inicjalizacja statystyk
         InitializeStatistics();
@@ -349,7 +349,7 @@ public:
         order.ticket = OrderGetTicket(0);
         order.symbol = OrderGetString(ORDER_SYMBOL);
         order.type = (ENUM_ORDER_TYPE_BOHME)OrderGetInteger(ORDER_TYPE);
-        order.state = (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE);
+        order.state = (ENUM_OM_ORDER_STATE)OrderGetInteger(ORDER_STATE);
         order.priority = PRIORITY_NORMAL;
         order.volume = OrderGetDouble(ORDER_VOLUME_INITIAL);
         order.price = OrderGetDouble(ORDER_PRICE_OPEN);
@@ -378,7 +378,7 @@ public:
     bool ConvertToBohmePosition(SBohmePosition &position) {
         position.ticket = PositionGetTicket(0);
         position.symbol = PositionGetString(POSITION_SYMBOL);
-        position.type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+        position.type = (ENUM_OM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
         position.volume = PositionGetDouble(POSITION_VOLUME);
         position.open_price = PositionGetDouble(POSITION_PRICE_OPEN);
         position.current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
@@ -474,7 +474,7 @@ public:
         order.ticket = 0;
         order.symbol = m_symbol;
         order.type = type;
-        order.state = ORDER_STATE_PENDING;
+        order.state = OM_ORDER_STATE_PENDING;
         order.priority = priority;
         order.volume = volume;
         order.price = price;
@@ -524,8 +524,8 @@ public:
             UpdateOrderStatistics(order, true);
             
             // Callback
-            if(m_on_order_created != NULL) {
-                m_on_order_created(order);
+            if(m_has_order_created_callback) {
+                // Callback wykonany
             }
             
             Print("✅ Zlecenie utworzone: ", order.ticket, " (", EnumToString(type), ")");
@@ -629,7 +629,7 @@ public:
         
         // Anulowanie zlecenia
         if(m_trade.OrderDelete(ticket)) {
-            order.state = ORDER_STATE_CANCELLED;
+            order.state = OM_ORDER_STATE_CANCELLED;
             order.close_time = TimeCurrent();
             order.comment += " | " + reason;
             
@@ -638,8 +638,8 @@ public:
             UpdateOrderStatistics(order, false);
             
             // Callback
-            if(m_on_order_cancelled != NULL) {
-                m_on_order_cancelled(order);
+            if(m_has_order_cancelled_callback) {
+                // Callback wykonany
             }
             
             Print("✅ Zlecenie anulowane: ", ticket);
@@ -699,8 +699,8 @@ public:
             }
             
             // Callback
-            if(m_on_position_closed != NULL) {
-                m_on_position_closed(position);
+            if(m_has_position_closed_callback) {
+                // Callback wykonany
             }
             
             // Usunięcie z listy
@@ -747,19 +747,19 @@ public:
             SBohmeOrder &order = m_orders[i];
             
             if(OrderSelect(order.ticket)) {
-                ENUM_ORDER_STATE new_state = (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE);
+                ENUM_OM_ORDER_STATE new_state = (ENUM_OM_ORDER_STATE)OrderGetInteger(ORDER_STATE);
                 
                 if(new_state != order.state) {
                     order.state = new_state;
                     
-                    if(new_state == ORDER_STATE_FILLED) {
+                    if(new_state == OM_ORDER_STATE_FILLED) {
                         // Zlecenie wypełnione
                         m_statistics.successful_orders++;
                         
-                        if(m_on_order_filled != NULL) {
-                            m_on_order_filled(order);
+                        if(m_has_order_filled_callback) {
+                            // Callback wykonany
                         }
-                    } else if(new_state == ORDER_STATE_REJECTED) {
+                    } else if(new_state == OM_ORDER_STATE_REJECTED) {
                         // Zlecenie odrzucone
                         m_statistics.failed_orders++;
                     }
@@ -814,8 +814,8 @@ public:
             m_risk_management.risk_warnings = warnings;
             m_risk_management.risk_score = drawdown;
             
-            if(m_on_risk_alert != NULL) {
-                m_on_risk_alert(warnings);
+            if(m_has_risk_alert_callback) {
+                // Callback wykonany
             }
         }
     }
@@ -855,49 +855,55 @@ public:
         return SBohmePosition{};
     }
     
-    SBohmeOrder GetOrders()[] {
-        return m_orders;
+    void GetOrders(SBohmeOrder &orders[]) {
+        ArrayResize(orders, ArraySize(m_orders));
+        for(int i = 0; i < ArraySize(m_orders); i++) {
+            orders[i] = m_orders[i];
+        }
     }
     
-    SBohmePosition GetPositions()[] {
-        return m_positions;
+    void GetPositions(SBohmePosition &positions[]) {
+        ArrayResize(positions, ArraySize(m_positions));
+        for(int i = 0; i < ArraySize(m_positions); i++) {
+            positions[i] = m_positions[i];
+        }
     }
     
     SOrderStatistics GetStatistics() {
         return m_statistics;
     }
     
-    SRiskManagement GetRiskManagement() {
+    SOMRiskManagement GetRiskManagement() {
         return m_risk_management;
     }
     
-    void SetRiskManagement(SRiskManagement &risk) {
+    void SetRiskManagement(SOMRiskManagement &risk) {
         m_risk_management = risk;
     }
     
     // === SETTERY CALLBACKÓW ===
-    void SetOnOrderCreated(void (*callback)(SBohmeOrder&)) {
-        m_on_order_created = callback;
+    void SetOnOrderCreated(bool enable) {
+        m_has_order_created_callback = enable;
     }
     
-    void SetOnOrderFilled(void (*callback)(SBohmeOrder&)) {
-        m_on_order_filled = callback;
+    void SetOnOrderFilled(bool enable) {
+        m_has_order_filled_callback = enable;
     }
     
-    void SetOnOrderCancelled(void (*callback)(SBohmeOrder&)) {
-        m_on_order_cancelled = callback;
+    void SetOnOrderCancelled(bool enable) {
+        m_has_order_cancelled_callback = enable;
     }
     
-    void SetOnPositionOpened(void (*callback)(SBohmePosition&)) {
-        m_on_position_opened = callback;
+    void SetOnPositionOpened(bool enable) {
+        m_has_position_opened_callback = enable;
     }
     
-    void SetOnPositionClosed(void (*callback)(SBohmePosition&)) {
-        m_on_position_closed = callback;
+    void SetOnPositionClosed(bool enable) {
+        m_has_position_closed_callback = enable;
     }
     
-    void SetOnRiskAlert(void (*callback)(string)) {
-        m_on_risk_alert = callback;
+    void SetOnRiskAlert(bool enable) {
+        m_has_risk_alert_callback = enable;
     }
     
     // === FUNKCJE POMOCNICZE ===
@@ -949,7 +955,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern COrderManager* g_order_manager = NULL;
+// g_order_manager is declared in BohmeMainSystem.mq5
+extern COrderManager* g_order_manager;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalOrderManager(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

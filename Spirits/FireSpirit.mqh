@@ -312,11 +312,14 @@ private:
     // Zaawansowane sieci neuronowe
     CFireSpiritAI* m_advanced_ai;
     
+    // Forward declarations for neural network classes
+    class CConvolutionalNet; // forward declaration
+    class CLocalLSTMNetwork; // forward declaration to satisfy pointer
+    
     // Volatility regime detection network
     CConvolutionalNet* m_regime_detector;
     
     // LSTM for volatility forecasting  
-    class CLocalLSTMNetwork; // forward declaration to satisfy pointer
     CLocalLSTMNetwork* m_volatility_lstm;
     
     // Energy measurement buffers

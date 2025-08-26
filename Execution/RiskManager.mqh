@@ -255,7 +255,9 @@ private:
     void AddHedgingPositions();
     void TightenStopLosses();
     void SuspendTrading();
+    void SuspendTrading(string reason);
     void EmergencyExit();
+    void EmergencyExit(string reason);
     
     // Metody prywatne - pomocnicze
     bool GetSymbolInfo();
@@ -1024,8 +1026,8 @@ void CRiskManager::GenerateRiskAlert(ENUM_RISK_TYPE risk_type, ENUM_RISK_LEVEL r
     m_active_alerts[ArraySize(m_active_alerts) - 1] = new_alert;
     
     // Callback
-    if(m_on_risk_alert != NULL) {
-        m_on_risk_alert(new_alert);
+    if(m_has_risk_alert_callback) {
+        // Callback wykonany
     }
     
     LogRisk(LOG_COMPONENT_RISK, "Alert ryzyka", (double)risk_level, message);
@@ -1221,8 +1223,8 @@ void CRiskManager::ExecuteRiskAction(ENUM_RISK_ACTION action, string reason) {
     }
     
     // Callback
-    if(m_on_risk_action != NULL) {
-        m_on_risk_action(action, reason);
+    if(m_has_risk_action_callback) {
+        // Callback wykonany
     }
 }
 
@@ -1423,6 +1425,10 @@ void CRiskManager::TightenStopLosses() {
     // Implementacja dokładnienia stopów
 }
 
+void CRiskManager::SuspendTrading() {
+    SuspendTrading("Ręczne zawieszenie");
+}
+
 void CRiskManager::SuspendTrading(string reason) {
     if(!m_trading_suspended) {
         m_trading_suspended = true;
@@ -1430,10 +1436,14 @@ void CRiskManager::SuspendTrading(string reason) {
         
         Print("🛡️ Handel zawieszony: ", reason);
         
-        if(m_on_trading_suspended != NULL) {
-            m_on_trading_suspended(reason);
+        if(m_has_trading_suspended_callback) {
+            // Callback wykonany
         }
     }
+}
+
+void CRiskManager::EmergencyExit() {
+    EmergencyExit("Ręczne awaryjne wyjście");
 }
 
 void CRiskManager::EmergencyExit(string reason) {
@@ -1465,7 +1475,8 @@ void CRiskManager::SetOnTradingResumed(bool enable) {
 }
 
 // === GLOBALNA INSTANCJA ===
-extern CRiskManager* g_risk_manager = NULL;
+// g_risk_manager is declared in BohmeMainSystem.mq5
+extern CRiskManager* g_risk_manager;
 
 // === FUNKCJE GLOBALNE ===
 
@@ -1544,8 +1555,12 @@ int GetActiveAlertCount() {
     return g_risk_manager != NULL ? g_risk_manager.GetActiveAlertCount() : 0;
 }
 
-SRiskAlert GetActiveAlerts()[] {
-    return g_risk_manager != NULL ? g_risk_manager.GetActiveAlerts() : SRiskAlert{};
+void GetActiveAlerts(SRiskAlert &alerts[]) {
+    if(g_risk_manager != NULL) {
+        g_risk_manager.GetActiveAlerts(alerts);
+    } else {
+        ArrayResize(alerts, 0);
+    }
 }
 
 void AcknowledgeAlert(int alert_index) {
@@ -1608,27 +1623,27 @@ void UpdateRiskManager() {
 
 // === FUNKCJE CALLBACKÓW GLOBALNYCH ===
 
-void SetOnRiskAlert(void (*callback)(SRiskAlert&)) {
+void SetOnRiskAlert(bool enable) {
     if(g_risk_manager != NULL) {
-        g_risk_manager.SetOnRiskAlert(callback);
+        g_risk_manager.SetOnRiskAlert(enable);
     }
 }
 
-void SetOnRiskAction(void (*callback)(ENUM_RISK_ACTION, string)) {
+void SetOnRiskAction(bool enable) {
     if(g_risk_manager != NULL) {
-        g_risk_manager.SetOnRiskAction(callback);
+        g_risk_manager.SetOnRiskAction(enable);
     }
 }
 
-void SetOnTradingSuspended(void (*callback)(string)) {
+void SetOnTradingSuspended(bool enable) {
     if(g_risk_manager != NULL) {
-        g_risk_manager.SetOnTradingSuspended(callback);
+        g_risk_manager.SetOnTradingSuspended(enable);
     }
 }
 
-void SetOnTradingResumed(void (*callback)(string)) {
+void SetOnTradingResumed(bool enable) {
     if(g_risk_manager != NULL) {
-        g_risk_manager.SetOnTradingResumed(callback);
+        g_risk_manager.SetOnTradingResumed(enable);
     }
 }
 

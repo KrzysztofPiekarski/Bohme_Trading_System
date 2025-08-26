@@ -2874,32 +2874,7 @@ void FinalizeStringUtils() {
     Print("   - Gotowy do użycia w Systemie Böhmego");
 }
 
-// Funkcje pomocnicze do konwersji (wrapper'y dla MQL5)
-
-// Konwersja string na int
-int Util_StringToInteger(string str) {
-    return StringToInteger(str);
-}
-
-// Konwersja int na string
-string Util_IntegerToString(int value) {
-    return IntegerToString(value);
-}
-
-// Konwersja double na string
-string Util_DoubleToString(double value, int digits) {
-    return DoubleToString(value, digits);
-}
-
-// Konwersja datetime na string
-string Util_TimeToString(datetime time) {
-    return TimeToString(time);
-}
-
-// Konwersja ushort na string
-string Util_ShortToString(ushort value) {
-    return ShortToString(value);
-}
+// Funkcje pomocnicze do konwersji (wrapper'y dla MQL5) - usunięte duplikaty
 
 // Funkcja do konwersji enum na string
 string EnumToString(ENUM_ENCODING_TYPE encoding) {

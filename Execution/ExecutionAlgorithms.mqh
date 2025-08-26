@@ -119,8 +119,8 @@ struct ExecutionStatistics {
     double net_pnl;                        // Netto PnL
 };
 
-// Struktura analizy rynku
-struct MarketAnalysis {
+// Struktura analizy rynku (dla Execution Algorithms)
+struct ExecutionMarketAnalysis {
     double current_volatility;             // Aktualna zmienność
     double average_volume;                 // Średni wolumen
     double bid_ask_spread;                 // Spread bid-ask
@@ -173,7 +173,7 @@ private:
     double m_total_cost;
     
     // Cache
-    MarketAnalysis m_market_analysis;
+    ExecutionMarketAnalysis m_market_analysis;
     ExecutionParameters m_default_params;
     datetime m_last_analysis;
     
@@ -676,7 +676,7 @@ public:
     
     // === FUNKCJE DOSTĘPU ===
     
-    MarketAnalysis GetMarketAnalysis() {
+    ExecutionMarketAnalysis GetMarketAnalysis() {
         if(TimeCurrent() - m_last_analysis > 60) {
             AnalyzeMarket();
         }
@@ -750,7 +750,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-CExecutionAlgorithms* g_execution_algorithms = NULL;
+// g_execution_algorithms is declared in BohmeMainSystem.mq5
+extern CExecutionAlgorithms* g_execution_algorithms;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalExecutionAlgorithms(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {
@@ -766,7 +767,7 @@ void ReleaseGlobalExecutionAlgorithms() {
     }
 }
 
-ExecutionResult ExecuteBuyOrder(double volume, double price = 0, ExecutionParameters &params) {
+ExecutionResult ExecuteBuyOrder(double volume, double price, ExecutionParameters &params) {
     if(g_execution_algorithms != NULL) {
         if(params.algorithm == 0) {
             params = g_execution_algorithms.GetDefaultParameters();
@@ -784,7 +785,7 @@ ExecutionResult ExecuteBuyOrder(double volume, double price = 0) {
     return ExecutionResult{};
 }
 
-ExecutionResult ExecuteSellOrder(double volume, double price = 0, ExecutionParameters &params) {
+ExecutionResult ExecuteSellOrder(double volume, double price, ExecutionParameters &params) {
     if(g_execution_algorithms != NULL) {
         if(params.algorithm == 0) {
             params = g_execution_algorithms.GetDefaultParameters();
@@ -802,8 +803,8 @@ ExecutionResult ExecuteSellOrder(double volume, double price = 0) {
     return ExecutionResult{};
 }
 
-MarketAnalysis GetMarketAnalysis() {
-    return g_execution_algorithms != NULL ? g_execution_algorithms.GetMarketAnalysis() : MarketAnalysis{};
+ExecutionMarketAnalysis GetMarketAnalysis() {
+    return g_execution_algorithms != NULL ? g_execution_algorithms.GetMarketAnalysis() : ExecutionMarketAnalysis{};
 }
 
 string GetExecutionAlgorithmsReport() {

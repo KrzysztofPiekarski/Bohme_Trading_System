@@ -1649,7 +1649,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-CSentimentAnalyzer* g_sentiment_analyzer = NULL;
+// g_sentiment_analyzer is declared in BohmeMainSystem.mq5
+extern CSentimentAnalyzer* g_sentiment_analyzer;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalSentimentAnalyzer(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

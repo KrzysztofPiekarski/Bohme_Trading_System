@@ -2304,154 +2304,7 @@ bool ExportTimeUtilsToFile(string filename) {
     return true;
 }
 
-// Funkcja do generowania dokumentacji HTML
-string GenerateHTMLDocumentation() {
-    string html = "<!DOCTYPE html>\n";
-    html += "<html lang=\"pl\">\n";
-    html += "<head>\n";
-    html += "    <meta charset=\"UTF-8\">\n";
-    html += "    <title>TimeUtils - Dokumentacja</title>\n";
-    html += "    <style>\n";
-    html += "        body { font-family: Arial, sans-serif; margin: 40px; }\n";
-    html += "        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; }\n";
-    html += "        h2 { color: #34495e; margin-top: 30px; }\n";
-    html += "        h3 { color: #7f8c8d; }\n";
-    html += "        .function { background: #f8f9fa; padding: 15px; margin: 10px 0; border-left: 4px solid #3498db; }\n";
-    html += "        .example { background: #ecf0f1; padding: 10px; margin: 10px 0; font-family: monospace; }\n";
-    html += "        .category { margin: 20px 0; }\n";
-    html += "    </style>\n";
-    html += "</head>\n";
-    html += "<body>\n";
-    
-    html += "<h1>⏰ TimeUtils - Dokumentacja</h1>\n";
-    html += "<p>Zaawansowane funkcje do obsługi czasu dla Systemu Böhmego</p>\n";
-    
-    html += "<div class=\"category\">\n";
-    html += "<h2>⏰ Podstawowe operacje</h2>\n";
-    html += "<div class=\"function\">\n";
-    html += "<h3>GetCurrentTime()</h3>\n";
-    html += "<p>Pobiera aktualny czas systemowy</p>\n";
-    html += "<div class=\"example\">datetime now = GetCurrentTime();</div>\n";
-    html += "</div>\n";
-    html += "</div>\n";
-    
-    html += "<div class=\"category\">\n";
-    html += "<h2>📅 Analiza czasu</h2>\n";
-    html += "<div class=\"function\">\n";
-    html += "<h3>AnalyzeTime(datetime timestamp)</h3>\n";
-    html += "<p>Przeprowadza szczegółową analizę czasu</p>\n";
-    html += "<div class=\"example\">STimeInfo info = AnalyzeTime(timestamp);</div>\n";
-    html += "</div>\n";
-    html += "</div>\n";
-    
-    html += "<div class=\"category\">\n";
-    html += "<h2>📊 Okresy czasowe</h2>\n";
-    html += "<div class=\"function\">\n";
-    html += "<h3>CreateDailyPeriod(datetime date)</h3>\n";
-    html += "<p>Tworzy dzienny okres czasowy</p>\n";
-    html += "<div class=\"example\">STimePeriod period = CreateDailyPeriod(date);</div>\n";
-    html += "</div>\n";
-    html += "</div>\n";
-    
-    html += "<div class=\"category\">\n";
-    html += "<h2>📈 Analiza czasowa</h2>\n";
-    html += "<div class=\"function\">\n";
-    html += "<h3>AnalyzeTimeTrend(datetime &timestamps[])</h3>\n";
-    html += "<p>Analizuje trend czasowy w danych</p>\n";
-    html += "<div class=\"example\">STimeAnalysis trend = AnalyzeTimeTrend(timestamps);</div>\n";
-    html += "</div>\n";
-    html += "</div>\n";
-    
-    html += "<h2>📈 Statystyki</h2>\n";
-    html += "<ul>\n";
-    html += "<li>50+ funkcji podstawowych</li>\n";
-    html += "<li>20+ funkcji analizy</li>\n";
-    html += "<li>15+ funkcji okresów</li>\n";
-    html += "<li>10+ funkcji kalendarza</li>\n";
-    html += "<li>15+ funkcji analizy czasowej</li>\n";
-    html += "<li>10+ funkcji statystyk</li>\n";
-    html += "</ul>\n";
-    
-    html += "<h2>🔗 Integracja z Systemem Böhmego</h2>\n";
-    html += "<p>TimeUtils jest zintegrowany z:</p>\n";
-    html += "<ul>\n";
-    html += "<li>LoggingSystem - timestampy logów</li>\n";
-    html += "<li>RiskManager - analiza czasowa ryzyka</li>\n";
-    html += "<li>PositionManager - czas trwania pozycji</li>\n";
-    html += "<li>FireSpirit - analiza sygnałów czasowych</li>\n";
-    html += "<li>LightSpirit - wzorce czasowe</li>\n";
-    html += "<li>MasterConsciousness - synchronizacja czasowa</li>\n";
-    html += "</ul>\n";
-    
-    html += "</body>\n";
-    html += "</html>\n";
-    
-    return html;
-}
-
-// Funkcja do zapisania dokumentacji HTML do pliku
-bool SaveHTMLDocumentation(string filename) {
-    int handle = FileOpen(filename, FILE_WRITE | FILE_TXT);
-    
-    if(handle == INVALID_HANDLE) {
-        Print("BŁĄD: Nie można utworzyć pliku HTML ", filename);
-        return false;
-    }
-    
-    string html = GenerateHTMLDocumentation();
-    FileWriteString(handle, html);
-    FileClose(handle);
-    
-    Print("Dokumentacja HTML zapisana do pliku: ", filename);
-    return true;
-}
-
-// Funkcja do generowania podsumowania wydajności
-string GeneratePerformanceSummary() {
-    string summary = "=== PODSUMOWANIE WYDAJNOŚCI TIME UTILS ===\n";
-    
-    // Testy wydajnościowe
-    datetime test_timestamps[100];
-    for(int i = 0; i < 100; i++) {
-        test_timestamps[i] = TimeCurrent() + i * 60;
-    }
-    
-    summary += "📊 Testy na danych o rozmiarze: " + IntegerToString(ArraySize(test_timestamps)) + " timestampów\n\n";
-    
-    // Pomiar czasu analizy
-    datetime start = TimeCurrent();
-    STimeInfo info = AnalyzeTime(test_timestamps[50]);
-    double analysis_time = (double)(TimeCurrent() - start);
-    summary += "⏱️ Analiza czasu: " + DoubleToString(analysis_time, 6) + "s\n";
-    
-    // Pomiar czasu analizy trendu
-    start = TimeCurrent();
-    STimeAnalysis trend = AnalyzeTimeTrend(test_timestamps);
-    double trend_time = (double)(TimeCurrent() - start);
-    summary += "📈 Analiza trendu: " + DoubleToString(trend_time, 6) + "s\n";
-    
-    // Pomiar czasu generowania kalendarza
-    start = TimeCurrent();
-    SCalendar calendar = GenerateCalendar(2024, 12);
-    double calendar_time = (double)(TimeCurrent() - start);
-    summary += "📅 Generowanie kalendarza: " + DoubleToString(calendar_time, 6) + "s\n";
-    
-    // Pomiar czasu wykrywania anomalii
-    start = TimeCurrent();
-    for(int i = 0; i < 10; i++) {
-        string anomalies = DetectTimeAnomalies(test_timestamps);
-    }
-    double anomalies_time = (double)(TimeCurrent() - start);
-    summary += "🚨 10 wykrywań anomalii: " + DoubleToString(anomalies_time, 6) + "s\n";
-    
-    summary += "\n📈 WNIOSKI:\n";
-    summary += "• Analiza czasu: " + (analysis_time < 0.001 ? "BARDZO SZYBKA" : "SZYBKA") + "\n";
-    summary += "• Analiza trendu: " + (trend_time < 0.001 ? "BARDZO SZYBKA" : "SZYBKA") + "\n";
-    summary += "• Kalendarz: " + (calendar_time < 0.001 ? "BARDZO SZYBKA" : "SZYBKA") + "\n";
-    summary += "• Anomalie: " + (anomalies_time < 0.01 ? "BARDZO SZYBKA" : "SZYBKA") + "\n";
-    
-    return summary;
-}
+// HTML documentation functions are defined in StringUtils.mqh
 
 // Funkcja do sprawdzenia aktualizacji TimeUtils
 string CheckTimeUtilsUpdates() {
@@ -2471,39 +2324,7 @@ string CheckTimeUtilsUpdates() {
     return update_info;
 }
 
-// Funkcja do generowania raportu użycia
-string GenerateUsageReport() {
-    string report = "=== RAPORT UŻYCIA TIME UTILS ===\n";
-    
-    report += "📊 STATYSTYKI UŻYCIA:\n";
-    report += "• Funkcje podstawowe: 50+\n";
-    report += "• Funkcje analizy: 20+\n";
-    report += "• Funkcje okresów: 15+\n";
-    report += "• Funkcje kalendarza: 10+\n";
-    report += "• Funkcje analizy czasowej: 15+\n";
-    report += "• Funkcje statystyk: 10+\n";
-    report += "• Łącznie: 120+ funkcji\n\n";
-    
-    report += "🎯 ZASTOSOWANIA W SYSTEMIE BÖHMEGO:\n";
-    report += "• LoggingSystem: timestampy i formatowanie czasu\n";
-    report += "• RiskManager: analiza czasowa ryzyka i drawdown\n";
-    report += "• PositionManager: czas trwania pozycji i analiza\n";
-    report += "• FireSpirit: wzorce czasowe sygnałów\n";
-    report += "• LightSpirit: analiza sezonowości\n";
-    report += "• MasterConsciousness: synchronizacja i harmonogram\n";
-    report += "• MathUtils: analiza szeregów czasowych\n";
-    report += "• StringUtils: formatowanie dat i czasu\n\n";
-    
-    report += "💡 PRZYKŁADY INTEGRACJI:\n";
-    report += "• Analiza czasowa transakcji i ich wpływu na ryzyko\n";
-    report += "• Wykrywanie wzorców czasowych w sygnałach\n";
-    report += "• Optymalizacja godzin handlowych\n";
-    report += "• Analiza sezonowości rynkowej\n";
-    report += "• Prognozowanie czasowe dla planowania\n";
-    report += "• Synchronizacja między komponentami systemu\n";
-    
-    return report;
-}
+// GenerateUsageReport function is defined in StringUtils.mqh
 
 // Funkcja do zamykania TimeUtils
 void FinalizeTimeUtils() {
@@ -2518,25 +2339,7 @@ void FinalizeTimeUtils() {
 
 // Funkcje pomocnicze do konwersji (wrapper'y dla MQL5)
 
-// Konwersja string na int
-int StringToInteger(string str) {
-    return StringToInteger(str);
-}
-
-// Konwersja int na string
-string IntegerToString(int value) {
-    return IntegerToString(value);
-}
-
-// Konwersja double na string
-string DoubleToString(double value, int digits) {
-    return DoubleToString(value, digits);
-}
-
-// Konwersja datetime na string
-string TimeToString(datetime time) {
-    return TimeToString(time);
-}
+// System conversion functions are used directly (removed problematic wrappers)
 
 // Funkcja do konwersji enum na string
 string EnumToString(ENUM_TIME_UNIT unit) {

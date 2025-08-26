@@ -14,8 +14,8 @@
 #property indicator_style1 STYLE_SOLID
 
 // Includes
-#include "../SystemConfig.mqh"
-#include "../MasterConsciousness.mqh"
+#include "SystemConfig.mqh"
+#include "MasterConsciousness.mqh"
 #include "../AI/AdvancedAI.mqh"
 #include "../Utils/LoggingSystem.mqh"
 
@@ -53,114 +53,17 @@
 #endif
 
 // Include zaawansowanego GUI
-#include "../BohmeGUI.mqh"
+#include "BohmeGUI.mqh"
 
 // === STRUKTURY STATYSTYK ===
-struct ExecutionStatistics {
-    int total_orders;
-    int successful_orders;
-    int failed_orders;
-    double success_rate;
-    double average_execution_time;
-    double total_volume;
-    datetime last_order_time;
-    string last_order_symbol;
-    double total_profit;
-    double total_loss;
-    double net_pnl;
-};
+// ExecutionStatistics is defined in ExecutionAlgorithms.mqh
 
-struct RiskStatistics {
-    double current_risk;
-    double max_risk;
-    double risk_per_trade;
-    double daily_risk;
-    double portfolio_risk;
-    int open_positions;
-    double total_exposure;
-    double max_drawdown;
-    double var_95;
-    double var_99;
-    datetime last_risk_update;
-};
+// RiskStatistics is defined in RiskManager.mqh
 
-struct PositionStatistics {
-    int total_positions;
-    int long_positions;
-    int short_positions;
-    double total_position_value;
-    double average_position_size;
-    double largest_position;
-    double smallest_position;
-    double total_margin_used;
-    double free_margin;
-    datetime last_position_update;
-};
+// PositionStatistics is defined in PositionManager.mqh
 
-// === GLOBALNA INICJALIZACJA KONFIGURACJI ===
-SystemConfig g_config = {
-    // === PODSTAWOWE PARAMETRY ===
-    75.0,    // confidence_threshold
-    70.0,    // alignment_threshold
-    2.0,     // max_risk_per_trade
-    5.0,     // max_daily_risk
-    0.01,    // min_position_size
-    1.0,     // max_position_size
-    true,    // learning_enabled
-    true,    // evolution_enabled
-    
-    // === AKTYWACJA DUCHÓW ===
-    true,    // enable_herbe_spirit
-    true,    // enable_sweetness_spirit
-    true,    // enable_bitterness_spirit
-    true,    // enable_fire_spirit
-    true,    // enable_light_spirit
-    true,    // enable_sound_spirit
-    true,    // enable_body_spirit
-    
-    // === WAGI DUCHÓW (0.0 - 2.0) ===
-    1.0,     // herbe_weight
-    1.0,     // sweetness_weight
-    1.0,     // bitterness_weight
-    1.0,     // fire_weight
-    1.0,     // light_weight
-    1.0,     // sound_weight
-    1.0,     // body_weight
-    
-    // === PARAMETRY MASTER CONSCIOUSNESS ===
-    8,       // transformer_heads
-    6,       // transformer_layers
-    1024,    // system_memory_size
-    0.001,   // learning_rate
-    
-    // === PARAMETRY ZARZĄDZANIA RYZYKIEM ===
-    2.0,     // stop_loss_multiplier
-    3.0,     // take_profit_multiplier
-    50.0,    // trailing_stop_distance
-    true,    // use_trailing_stop
-    
-    // === PARAMETRY CZASOWE ===
-    60,      // analysis_interval
-    24,      // model_update_interval
-    7,       // evolution_interval
-    
-    // === PARAMETRY DIAGNOSTYKI ===
-    true,    // enable_debug_logging
-    true,    // enable_performance_tracking
-    1000,    // max_history_size
-    
-    // === PARAMETRY LOGOWANIA ===
-    true,    // enable_logging_system
-    LOG_LEVEL_INFO,  // logging_level
-    true,    // enable_log_file_output
-    true,    // enable_log_console_output
-    true,    // enable_log_performance
-    true,    // enable_log_risk
-    true,    // enable_log_trade
-    true,    // enable_log_ai
-    1000,    // max_log_entries
-    "Bohme_System_Log.txt"  // log_file_path
-};
+// === GLOBALNA KONFIGURACJA ===
+SystemConfig g_config;
 
 // GUI Constants
 #define GUI_WIDTH 400
@@ -272,10 +175,80 @@ STestResult g_test_results[];
 int g_test_count = 0;
 
 //+------------------------------------------------------------------+
+//| Initialize system configuration                                  |
+//+------------------------------------------------------------------+
+void InitializeSystemConfig() {
+    // === PODSTAWOWE PARAMETRY ===
+    g_config.confidence_threshold = 75.0;
+    g_config.alignment_threshold = 70.0;
+    g_config.max_risk_per_trade = 2.0;
+    g_config.max_daily_risk = 5.0;
+    g_config.min_position_size = 0.01;
+    g_config.max_position_size = 1.0;
+    g_config.learning_enabled = true;
+    g_config.evolution_enabled = true;
+    
+    // === AKTYWACJA DUCHÓW ===
+    g_config.enable_herbe_spirit = true;
+    g_config.enable_sweetness_spirit = true;
+    g_config.enable_bitterness_spirit = true;
+    g_config.enable_fire_spirit = true;
+    g_config.enable_light_spirit = true;
+    g_config.enable_sound_spirit = true;
+    g_config.enable_body_spirit = true;
+    
+    // === WAGI DUCHÓW (0.0 - 2.0) ===
+    g_config.herbe_weight = 1.0;
+    g_config.sweetness_weight = 1.0;
+    g_config.bitterness_weight = 1.0;
+    g_config.fire_weight = 1.0;
+    g_config.light_weight = 1.0;
+    g_config.sound_weight = 1.0;
+    g_config.body_weight = 1.0;
+    
+    // === PARAMETRY MASTER CONSCIOUSNESS ===
+    g_config.transformer_heads = 8;
+    g_config.transformer_layers = 6;
+    g_config.system_memory_size = 1024;
+    g_config.learning_rate = 0.001;
+    
+    // === PARAMETRY ZARZĄDZANIA RYZYKIEM ===
+    g_config.stop_loss_multiplier = 2.0;
+    g_config.take_profit_multiplier = 3.0;
+    g_config.trailing_stop_distance = 50.0;
+    g_config.use_trailing_stop = true;
+    
+    // === PARAMETRY CZASOWE ===
+    g_config.analysis_interval = 60;
+    g_config.model_update_interval = 24;
+    g_config.evolution_interval = 7;
+    
+    // === PARAMETRY DIAGNOSTYKI ===
+    g_config.enable_debug_logging = true;
+    g_config.enable_performance_tracking = true;
+    g_config.max_history_size = 1000;
+    
+    // === PARAMETRY LOGOWANIA ===
+    g_config.enable_logging_system = true;
+    g_config.logging_level = LOG_LEVEL_INFO;
+    g_config.enable_log_file_output = true;
+    g_config.enable_log_console_output = true;
+    g_config.enable_log_performance = true;
+    g_config.enable_log_risk = true;
+    g_config.enable_log_trade = true;
+    g_config.enable_log_ai = true;
+    g_config.max_log_entries = 1000;
+    g_config.log_file_path = "Bohme_System_Log.txt";
+}
+
+//+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit() {
     Print("🌟 Inicjalizacja Systemu Böhmego v2.0 z Zaawansowanym AI");
+    
+    // Initialize configuration
+    InitializeSystemConfig();
     
     // Initialize GUI
     InitializeGUI();
@@ -455,28 +428,7 @@ void InitializeGUI() {
     Print("✅ GUI zainicjalizowane");
 }
 
-//+------------------------------------------------------------------+
-//| Initialize Advanced GUI                                          |
-//+------------------------------------------------------------------+
-void InitializeAdvancedGUI() {
-    Print("🎨 Inicjalizacja zaawansowanego GUI...");
-    
-    // Initialize advanced GUI features
-    // This function can be extended with advanced GUI features
-    // such as real-time charts, advanced controls, etc.
-    
-    // Set up advanced chart properties
-    ChartSetInteger(0, CHART_SHOW_GRID, true);
-    ChartSetInteger(0, CHART_SHOW_VOLUMES, CHART_VOLUME_TICK);
-    ChartSetInteger(0, CHART_COLOR_BACKGROUND, clrBlack);
-    ChartSetInteger(0, CHART_COLOR_FOREGROUND, clrWhite);
-    
-    // Enable advanced chart events
-    ChartSetInteger(0, CHART_EVENT_MOUSE_WHEEL, true);
-    ChartSetInteger(0, CHART_EVENT_OBJECT_DRAG, true);
-    
-    Print("✅ Zaawansowane GUI zainicjalizowane");
-}
+// InitializeAdvancedGUI function is implemented in BohmeGUI.mqh
 
 //+------------------------------------------------------------------+
 //| Create GUI Elements                                              |
@@ -1593,20 +1545,7 @@ void UpdateGUI() {
     UpdateStatusIndicators();
 }
 
-//+------------------------------------------------------------------+
-//| Update Advanced GUI                                               |
-//+------------------------------------------------------------------+
-void UpdateAdvancedGUI() {
-    if(!g_gui_state.is_visible) return;
-    
-    // Update advanced GUI features
-    // This function can be extended with advanced GUI update features
-    // such as real-time charts, advanced controls, etc.
-    
-    // Update chart properties if needed
-    ChartSetInteger(0, CHART_SHOW_GRID, true);
-    ChartSetInteger(0, CHART_SHOW_VOLUMES, CHART_VOLUME_TICK);
-}
+// UpdateAdvancedGUI function is implemented in BohmeGUI.mqh
 
 //+------------------------------------------------------------------+
 //| Refresh GUI                                                       |

@@ -5,6 +5,8 @@
 class CNeuralNetworkMomentum {
 public:
     CNeuralNetworkMomentum() {}
+    bool Initialize() { return true; }
+    void UpdateData() {}
     double Predict(double &inputs[]) {
         // Placeholder implementation
         double sum = 0.0;
@@ -18,6 +20,8 @@ public:
 class CVolumeProfileAnalyzer {
 public:
     CVolumeProfileAnalyzer() {}
+    bool Initialize() { return true; }
+    void UpdateVolumeData() {}
     double GetBreakthroughStrength() {
         // Placeholder implementation
         return 50.0 + MathRand() % 50; // Random 50-100
@@ -27,6 +31,8 @@ public:
 class CFractalDimension {
 public:
     CFractalDimension() {}
+    bool Initialize() { return true; }
+    void UpdateFractalData() {}
     double CalculateDimension() {
         // Placeholder implementation
         return 1.5 + (MathRand() % 50) / 100.0; // 1.5-2.0
@@ -40,6 +46,8 @@ public:
 class CWaveAnalyzer {
 public:
     CWaveAnalyzer() {}
+    bool Initialize() { return true; }
+    void UpdateWaveData() {}
     double GetCurrentWaveStrength() {
         // Placeholder implementation
         return 40.0 + MathRand() % 60; // 40-100
@@ -400,7 +408,7 @@ double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
     
     // Get price and volume data
     if(CopyClose(Symbol(), timeframe, 0, bars_count, prices) != bars_count ||
-       CopyTickVolume(Symbol(), timeframe, 0, bars_count, volumes) != bars_count) {
+       CopyRealVolume(Symbol(), timeframe, 0, bars_count, volumes) != bars_count) {
         return 0.0;
     }
     
@@ -429,7 +437,7 @@ double BitternessSpirit::CalculateVolumeBreakthrough() {
     double volumes[];
     int bars_count = 100;
     
-    if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes) != bars_count) {
+    if(CopyRealVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes) != bars_count) {
         return 0.0;
     }
     

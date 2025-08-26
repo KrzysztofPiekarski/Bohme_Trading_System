@@ -1295,7 +1295,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-CEconomicCalendar* g_economic_calendar = NULL;
+// g_economic_calendar is declared in BohmeMainSystem.mq5
+extern CEconomicCalendar* g_economic_calendar;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalEconomicCalendar(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

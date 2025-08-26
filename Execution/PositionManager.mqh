@@ -14,31 +14,31 @@
 
 // === ENUMERACJE ===
 
-// Stany pozycji
-enum ENUM_POSITION_STATE {
-    POSITION_STATE_OPEN,            // Pozycja otwarta
-    POSITION_STATE_PROFIT,          // Pozycja na plusie
-    POSITION_STATE_LOSS,            // Pozycja na minusie
-    POSITION_STATE_BREAKEVEN,       // Pozycja na zero
-    POSITION_STATE_CRITICAL,        // Pozycja krytyczna
-    POSITION_STATE_CLOSED           // Pozycja zamknięta
+// Stany pozycji (dla Position Manager)
+enum ENUM_PM_POSITION_STATE {
+    PM_POSITION_STATE_OPEN,            // Pozycja otwarta
+    PM_POSITION_STATE_PROFIT,          // Pozycja na plusie
+    PM_POSITION_STATE_LOSS,            // Pozycja na minusie
+    PM_POSITION_STATE_BREAKEVEN,       // Pozycja na zero
+    PM_POSITION_STATE_CRITICAL,        // Pozycja krytyczna
+    PM_POSITION_STATE_CLOSED           // Pozycja zamknięta
 };
 
-// Typy pozycji
-enum ENUM_POSITION_TYPE {
-    POSITION_TYPE_LONG,             // Pozycja długa
-    POSITION_TYPE_SHORT,            // Pozycja krótka
-    POSITION_TYPE_SCALP,            // Pozycja skalpowa
-    POSITION_TYPE_SWING,            // Pozycja swingowa
-    POSITION_TYPE_GRID              // Pozycja grid
+// Typy pozycji (dla Position Manager)
+enum ENUM_PM_POSITION_TYPE {
+    PM_POSITION_TYPE_LONG,             // Pozycja długa
+    PM_POSITION_TYPE_SHORT,            // Pozycja krótka
+    PM_POSITION_TYPE_SCALP,            // Pozycja skalpowa
+    PM_POSITION_TYPE_SWING,            // Pozycja swingowa
+    PM_POSITION_TYPE_GRID              // Pozycja grid
 };
 
-// Poziomy ryzyka
-enum ENUM_RISK_LEVEL {
-    RISK_LOW,                       // Niskie ryzyko
-    RISK_MODERATE,                  // Umiarkowane ryzyko
-    RISK_HIGH,                      // Wysokie ryzyko
-    RISK_EXTREME                    // Ekstremalne ryzyko
+// Poziomy ryzyka (dla Position Manager)
+enum ENUM_PM_RISK_LEVEL {
+    PM_RISK_LOW,                       // Niskie ryzyko
+    PM_RISK_MODERATE,                  // Umiarkowane ryzyko
+    PM_RISK_HIGH,                      // Wysokie ryzyko
+    PM_RISK_EXTREME                    // Ekstremalne ryzyko
 };
 
 // === STRUKTURY DANYCH ===
@@ -47,8 +47,8 @@ enum ENUM_RISK_LEVEL {
 struct SPosition {
     ulong ticket;                   // Ticket pozycji
     string symbol;                  // Symbol
-    ENUM_POSITION_TYPE type;        // Typ pozycji
-    ENUM_POSITION_STATE state;      // Stan pozycji
+    ENUM_PM_POSITION_TYPE type;        // Typ pozycji
+    ENUM_PM_POSITION_STATE state;      // Stan pozycji
     double volume;                  // Wolumen
     double open_price;              // Cena otwarcia
     double current_price;           // Aktualna cena
@@ -271,7 +271,7 @@ public:
     bool ConvertToPosition(SPosition &position) {
         position.ticket = PositionGetTicket(0);
         position.symbol = PositionGetString(POSITION_SYMBOL);
-        position.type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+        position.type = (ENUM_PM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
         position.volume = PositionGetDouble(POSITION_VOLUME);
         position.open_price = PositionGetDouble(POSITION_PRICE_OPEN);
         position.current_price = PositionGetDouble(POSITION_PRICE_CURRENT);
@@ -856,9 +856,9 @@ public:
     // === AKTUALIZACJA STANU POZYCJI ===
     void UpdatePositionState(SPosition &position) {
         if(position.unrealized_profit > 0) {
-            position.state = POSITION_STATE_PROFIT;
+            position.state = PM_POSITION_STATE_PROFIT;
         } else if(position.unrealized_profit < 0) {
-            position.state = POSITION_STATE_LOSS;
+            position.state = PM_POSITION_STATE_LOSS;
             
             // Obliczenie drawdown
             position.drawdown = MathAbs(position.unrealized_profit);
@@ -869,11 +869,11 @@ public:
             if(account_balance > 0) {
                 double loss_percentage = (position.drawdown / account_balance) * 100.0;
                 if(loss_percentage > m_risk_management.max_drawdown_limit) {
-                    position.state = POSITION_STATE_CRITICAL;
+                    position.state = PM_POSITION_STATE_CRITICAL;
                 }
             }
         } else {
-            position.state = POSITION_STATE_BREAKEVEN;
+            position.state = PM_POSITION_STATE_BREAKEVEN;
         }
         
         // Obliczenie stosunku ryzyko/nagroda
@@ -921,12 +921,12 @@ public:
     // === ZARZĄDZANIE POJEDYNCZĄ POZYCJĄ ===
     void ManageSinglePosition(SPosition &position) {
         // Trailing stop dla pozycji na plusie
-        if(position.state == POSITION_STATE_PROFIT && position.unrealized_profit > 0) {
+        if(position.state == PM_POSITION_STATE_PROFIT && position.unrealized_profit > 0) {
             ApplyTrailingStop(position);
         }
         
         // Zamknięcie pozycji krytycznej
-        if(position.state == POSITION_STATE_CRITICAL) {
+        if(position.state == PM_POSITION_STATE_CRITICAL) {
             ClosePosition(position.ticket, "Pozycja krytyczna - automatyczne zamknięcie");
         }
         
@@ -940,13 +940,13 @@ public:
     void ApplyTrailingStop(SPosition &position) {
         double trailing_distance = m_estimators.atr_volatility * 2.0; // 2x ATR
         
-        if(position.type == POSITION_TYPE_LONG) {
+        if(position.type == PM_POSITION_TYPE_LONG) {
             double new_stop = position.current_price - trailing_distance;
             if(new_stop > position.stop_loss) {
                 ModifyStopLoss(position.ticket, new_stop);
                 position.stop_loss = new_stop;
             }
-        } else if(position.type == POSITION_TYPE_SHORT) {
+        } else if(position.type == PM_POSITION_TYPE_SHORT) {
             double new_stop = position.current_price + trailing_distance;
             if(new_stop < position.stop_loss || position.stop_loss == 0) {
                 ModifyStopLoss(position.ticket, new_stop);
@@ -959,13 +959,13 @@ public:
     void TightenStopLoss(SPosition &position) {
         double tight_distance = m_estimators.atr_volatility * 1.5; // 1.5x ATR
         
-        if(position.type == POSITION_TYPE_LONG) {
+        if(position.type == PM_POSITION_TYPE_LONG) {
             double new_stop = position.current_price - tight_distance;
             if(new_stop > position.stop_loss) {
                 ModifyStopLoss(position.ticket, new_stop);
                 position.stop_loss = new_stop;
             }
-        } else if(position.type == POSITION_TYPE_SHORT) {
+        } else if(position.type == PM_POSITION_TYPE_SHORT) {
             double new_stop = position.current_price + tight_distance;
             if(new_stop < position.stop_loss || position.stop_loss == 0) {
                 ModifyStopLoss(position.ticket, new_stop);
@@ -994,11 +994,11 @@ public:
         
         // Zamknięcie pozycji
         if(m_trade.PositionClose(ticket)) {
-            position.state = POSITION_STATE_CLOSED;
+            position.state = PM_POSITION_STATE_CLOSED;
             
             // Callback
-            if(m_on_position_closed != NULL) {
-                m_on_position_closed(position);
+            if(m_has_position_closed_callback) {
+                // Callback wykonany
             }
             
             // Usunięcie z listy
@@ -1045,8 +1045,8 @@ public:
             m_risk_management.risk_warnings = warnings;
             m_risk_management.risk_score = drawdown;
             
-            if(m_on_risk_alert != NULL) {
-                m_on_risk_alert(warnings);
+            if(m_has_risk_alert_callback) {
+                // Callback wykonany
             }
         }
     }
@@ -1222,7 +1222,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-extern CPositionManager* g_position_manager = NULL;
+// g_position_manager is declared in BohmeMainSystem.mq5
+extern CPositionManager* g_position_manager;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalPositionManager(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

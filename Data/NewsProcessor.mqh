@@ -1674,7 +1674,8 @@ public:
 };
 
 // === GLOBALNA INSTANCJA ===
-CNewsProcessor* g_news_processor = NULL;
+// g_news_processor is declared in BohmeMainSystem.mq5
+extern CNewsProcessor* g_news_processor;
 
 // === FUNKCJE GLOBALNE ===
 bool InitializeGlobalNewsProcessor(string symbol = "", ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT) {

@@ -49,7 +49,7 @@ public:
     bool Initialize() { return true; }
     void UpdateData() {}
     // W MQL przekazujemy 1D tablicę i obliczamy indeksy OHLC ręcznie
-    void Recognize(double &matrix[], double &probabilities[]) {
+    void Recognize(double& matrix[], double& probabilities[]) {
         // Placeholder implementation
         ArrayResize(probabilities, 8);
         for(int i = 0; i < 8; i++) {
@@ -131,7 +131,7 @@ double ValidateMultiTimeframeAlignment() {
 }
 
 // Przygotowanie macierzy OHLC jako spłaszczonej tablicy [bars*4]
-void PrepareOHLCMatrix(double &matrix[], int bars) {
+void PrepareOHLCMatrix(double& matrix[], int bars) {
     ArrayResize(matrix, bars * 4);
     
     double opens[], highs[], lows[], closes[];
@@ -155,7 +155,7 @@ double CalculatePatternCompletion(int pattern_type) {
 }
 
 // Ocena jakości wzorca dla spłaszczonej macierzy [N*4]
-double AssessPatternQuality(int pattern_type, double &matrix[]) {
+double AssessPatternQuality(int pattern_type, double& matrix[]) {
     // Placeholder implementation
     return 50.0 + (MathRand() % 50); // 50-100
 }
