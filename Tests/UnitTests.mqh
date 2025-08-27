@@ -11,12 +11,13 @@
 #include "../Spirits/SoundSpirit.mqh"
 #include "../Spirits/SweetnessSpirit.mqh"
 
-// Includes dla AI
-#include "../AI/AdvancedAI.mqh"
-#include "../AI/NeuralNetworks.mqh"
-#include "../AI/ReinforcementLearning.mqh"
-#include "../AI/PatternRecognition.mqh"
-#include "../AI/MachineLearning.mqh"
+// REMOVED: AI includes - folder AI/ deleted (legacy code)
+// All AI functionality is now integrated directly in Spirits
+// #include "../AI/AdvancedAI.mqh"
+// #include "../AI/NeuralNetworks.mqh" 
+// #include "../AI/ReinforcementLearning.mqh"
+// #include "../AI/PatternRecognition.mqh"
+// #include "../AI/MachineLearning.mqh"
 
 // Includes dla Data
 #include "../Data/DataManager.mqh"

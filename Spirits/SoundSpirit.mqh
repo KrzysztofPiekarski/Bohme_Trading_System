@@ -1,10 +1,17 @@
 ﻿
 // Kompletna implementacja Ducha Dźwięku - Harmony & Cycle Analysis
 #include <Math\Alglib\ap.mqh>
-#include "../AI/AIEnums.mqh"
 #include "../Utils/LoggingSystem.mqh"
+// REMOVED: #include "../AI/AIEnums.mqh" - unused, has placeholders
 
-// Używamy ENUM_HARMONY_STATE z AIEnums.mqh
+// Define local ENUM_HARMONY_STATE (previously from AIEnums.mqh)
+enum ENUM_HARMONY_STATE {
+    HARMONY_DISSONANT,
+    HARMONY_MINOR,
+    HARMONY_MAJOR,
+    HARMONY_PERFECT,
+    HARMONY_TRANSCENDENT
+};
 
 // Brakujące definicje klas
 class CSpectralAnalysisNet {

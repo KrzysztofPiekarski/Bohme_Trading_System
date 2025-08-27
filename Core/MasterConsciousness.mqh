@@ -18,7 +18,7 @@ enum ENUM_SYSTEM_STATE {
     SYSTEM_TRANSCENDENT    // System w stanie transcendencji
 };
 
-// Enums are defined in AI/AIEnums.mqh
+// REMOVED: Enums from AI/AIEnums.mqh - folder AI/ deleted (legacy code)
 
 // SSignalData is defined in LightSpirit.mqh
 // SCycle is defined in SoundSpirit.mqh
@@ -898,12 +898,235 @@ void BohmeAISystem::PrepareFinalDecisionInputs(double &inputs[], STradeDecision 
 }
 
 void BohmeAISystem::PrepareSystemLearningData(double &data[][], double &targets[]) {
-    // Implementacja przygotowania danych do uczenia
-    for(int i = 0; i < m_state_history_count && i < 1000; i++) {
-        for(int j = 0; j < 196; j++) {
-            data[i][j] = 0.0; // Placeholder
+    // Rzeczywista implementacja przygotowania danych do uczenia
+    int data_count = MathMin(m_state_history_count, 1000);
+    
+    for(int i = 0; i < data_count; i++) {
+        // Przygotuj wejścia na podstawie historycznego stanu
+        SMarketState &state = m_previous_states[i];
+        STradeDecision &decision = m_previous_decisions[i];
+        
+        int index = 0;
+        
+        // === DANE DUCHÓW (7 * 20 = 140 parametrów) ===
+        
+        // Herbe Spirit (20 parametrów)
+        data[i][index++] = state.herbe_strength;
+        data[i][index++] = state.herbe_quality_score;
+        data[i][index++] = state.herbe_fundamental_alignment;
+        data[i][index++] = state.herbe_economic_indicators[0]; // Fed Rate Impact
+        data[i][index++] = state.herbe_economic_indicators[1]; // ECB Rate Impact
+        data[i][index++] = state.herbe_economic_indicators[2]; // BOJ Rate Impact
+        data[i][index++] = state.herbe_policy_sentiment;
+        data[i][index++] = state.herbe_inflation_pressure;
+        data[i][index++] = state.herbe_yield_curve_analysis;
+        data[i][index++] = state.herbe_currency_flow_direction;
+        data[i][index++] = state.herbe_market_structure_health;
+        data[i][index++] = state.herbe_liquidity_conditions;
+        data[i][index++] = state.herbe_volatility_regime;
+        data[i][index++] = state.herbe_time_cycle_alignment;
+        data[i][index++] = state.herbe_news_impact_score;
+        data[i][index++] = state.herbe_forward_guidance_clarity;
+        data[i][index++] = state.herbe_qe_divergence;
+        data[i][index++] = state.herbe_risk_appetite;
+        data[i][index++] = state.herbe_correlation_strength;
+        data[i][index++] = state.herbe_overall_confidence;
+        
+        // Sentiment Spirit (20 parametrów)
+        data[i][index++] = state.sentiment_harmony;
+        data[i][index++] = state.sentiment_intensity;
+        data[i][index++] = state.sentiment_social_score;
+        data[i][index++] = state.sentiment_news_score;
+        data[i][index++] = state.sentiment_analyst_score;
+        data[i][index++] = state.sentiment_retail_score;
+        data[i][index++] = state.sentiment_institutional_score;
+        data[i][index++] = state.sentiment_fear_greed_index;
+        data[i][index++] = state.sentiment_market_mood;
+        data[i][index++] = state.sentiment_momentum;
+        data[i][index++] = state.sentiment_divergence;
+        data[i][index++] = state.sentiment_volatility_correlation;
+        data[i][index++] = state.sentiment_volume_correlation;
+        data[i][index++] = state.sentiment_price_correlation;
+        data[i][index++] = state.sentiment_time_decay;
+        data[i][index++] = state.sentiment_confidence_level;
+        data[i][index++] = state.sentiment_data_quality;
+        data[i][index++] = state.sentiment_source_diversity;
+        data[i][index++] = state.sentiment_real_time_factor;
+        data[i][index++] = state.sentiment_overall_score;
+        
+        // Fire Spirit (20 parametrów)
+        data[i][index++] = state.fire_intensity;
+        data[i][index++] = state.fire_volatility_prediction;
+        data[i][index++] = state.fire_energy_level;
+        data[i][index++] = state.fire_momentum_strength;
+        data[i][index++] = state.fire_breakout_probability;
+        data[i][index++] = state.fire_trend_strength;
+        data[i][index++] = state.fire_reversal_risk;
+        data[i][index++] = state.fire_volume_confirmation;
+        data[i][index++] = state.fire_price_acceleration;
+        data[i][index++] = state.fire_volatility_regime;
+        data[i][index++] = state.fire_market_phase;
+        data[i][index++] = state.fire_risk_reward_ratio;
+        data[i][index++] = state.fire_time_horizon_optimal;
+        data[i][index++] = state.fire_signal_clarity;
+        data[i][index++] = state.fire_confirmation_strength;
+        data[i][index++] = state.fire_noise_ratio;
+        data[i][index++] = state.fire_adaptive_threshold;
+        data[i][index++] = state.fire_learning_rate;
+        data[i][index++] = state.fire_prediction_accuracy;
+        data[i][index++] = state.fire_overall_confidence;
+        
+        // Light Spirit (20 parametrów)
+        data[i][index++] = state.signal_clarity;
+        data[i][index++] = state.light_pattern_strength;
+        data[i][index++] = state.light_signal_quality;
+        data[i][index++] = state.light_noise_level;
+        data[i][index++] = state.light_trend_clarity;
+        data[i][index++] = state.light_support_resistance_strength;
+        data[i][index++] = state.light_fibonacci_alignment;
+        data[i][index++] = state.light_elliott_wave_position;
+        data[i][index++] = state.light_candlestick_patterns;
+        data[i][index++] = state.light_volume_price_analysis;
+        data[i][index++] = state.light_momentum_divergence;
+        data[i][index++] = state.light_oscillator_alignment;
+        data[i][index++] = state.light_moving_average_confluence;
+        data[i][index++] = state.light_bollinger_position;
+        data[i][index++] = state.light_rsi_position;
+        data[i][index++] = state.light_macd_signal;
+        data[i][index++] = state.light_stochastic_position;
+        data[i][index++] = state.light_pattern_completion;
+        data[i][index++] = state.light_timeframe_alignment;
+        data[i][index++] = state.light_overall_confidence;
+        
+        // Sound Spirit (20 parametrów)
+        data[i][index++] = state.cycle_harmony;
+        data[i][index++] = state.sound_frequency_analysis;
+        data[i][index++] = state.sound_rhythm_strength;
+        data[i][index++] = state.sound_cycle_position;
+        data[i][index++] = state.sound_seasonal_factor;
+        data[i][index++] = state.sound_lunar_influence;
+        data[i][index++] = state.sound_weekly_pattern;
+        data[i][index++] = state.sound_daily_rhythm;
+        data[i][index++] = state.sound_session_analysis;
+        data[i][index++] = state.sound_market_open_close;
+        data[i][index++] = state.sound_news_timing;
+        data[i][index++] = state.sound_economic_calendar;
+        data[i][index++] = state.sound_volatility_cycles;
+        data[i][index++] = state.sound_volume_cycles;
+        data[i][index++] = state.sound_price_cycles;
+        data[i][index++] = state.sound_fibonacci_time;
+        data[i][index++] = state.sound_gann_angles;
+        data[i][index++] = state.sound_time_price_square;
+        data[i][index++] = state.sound_harmonic_resonance;
+        data[i][index++] = state.sound_overall_confidence;
+        
+        // Body Spirit (20 parametrów)
+        data[i][index++] = state.execution_readiness;
+        data[i][index++] = state.body_execution_quality;
+        data[i][index++] = state.body_slippage_risk;
+        data[i][index++] = state.body_liquidity_depth;
+        data[i][index++] = state.body_spread_analysis;
+        data[i][index++] = state.body_order_flow;
+        data[i][index++] = state.body_market_impact;
+        data[i][index++] = state.body_timing_precision;
+        data[i][index++] = state.body_volume_distribution;
+        data[i][index++] = state.body_price_improvement;
+        data[i][index++] = state.body_execution_speed;
+        data[i][index++] = state.body_partial_fill_risk;
+        data[i][index++] = state.body_broker_latency;
+        data[i][index++] = state.body_network_stability;
+        data[i][index++] = state.body_server_response;
+        data[i][index++] = state.body_order_rejection_risk;
+        data[i][index++] = state.body_requote_probability;
+        data[i][index++] = state.body_execution_cost;
+        data[i][index++] = state.body_optimal_size;
+        data[i][index++] = state.body_overall_confidence;
+        
+        // Bitterness Spirit (20 parametrów)
+        data[i][index++] = state.momentum_power;
+        data[i][index++] = state.bitterness_risk_level;
+        data[i][index++] = state.bitterness_drawdown_risk;
+        data[i][index++] = state.bitterness_volatility_risk;
+        data[i][index++] = state.bitterness_correlation_risk;
+        data[i][index++] = state.bitterness_liquidity_risk;
+        data[i][index++] = state.bitterness_counterparty_risk;
+        data[i][index++] = state.bitterness_systemic_risk;
+        data[i][index++] = state.bitterness_regulatory_risk;
+        data[i][index++] = state.bitterness_operational_risk;
+        data[i][index++] = state.bitterness_model_risk;
+        data[i][index++] = state.bitterness_execution_risk;
+        data[i][index++] = state.bitterness_market_risk;
+        data[i][index++] = state.bitterness_credit_risk;
+        data[i][index++] = state.bitterness_concentration_risk;
+        data[i][index++] = state.bitterness_tail_risk;
+        data[i][index++] = state.bitterness_black_swan_probability;
+        data[i][index++] = state.bitterness_stress_test_result;
+        data[i][index++] = state.bitterness_var_calculation;
+        data[i][index++] = state.bitterness_overall_confidence;
+        
+        // === SYSTEM METRICS (56 parametrów) ===
+        data[i][index++] = state.system_confidence;
+        data[i][index++] = state.system_alignment;
+        data[i][index++] = state.system_entropy;
+        data[i][index++] = state.system_stability;
+        data[i][index++] = decision.confidence;
+        data[i][index++] = decision.harmony;
+        data[i][index++] = decision.urgency;
+        data[i][index++] = decision.entry_price;
+        data[i][index++] = decision.stop_loss;
+        data[i][index++] = decision.take_profit;
+        data[i][index++] = decision.position_size;
+        data[i][index++] = decision.optimal_time;
+        
+        // Spirit contributions
+        for(int j = 0; j < 7; j++) {
+            data[i][index++] = decision.spirit_contributions[j];
         }
-        targets[i] = 0.0; // Placeholder
+        
+        // Market conditions
+        data[i][index++] = SymbolInfoDouble(Symbol(), SYMBOL_BID);
+        data[i][index++] = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+        data[i][index++] = SymbolInfoDouble(Symbol(), SYMBOL_SPREAD);
+        data[i][index++] = (double)SymbolInfoInteger(Symbol(), SYMBOL_VOLUME);
+        data[i][index++] = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
+        
+        // Time factors
+        datetime current_time = TimeCurrent();
+        data[i][index++] = (double)current_time;
+        data[i][index++] = (double)TimeHour(current_time);
+        data[i][index++] = (double)TimeDayOfWeek(current_time);
+        data[i][index++] = (double)TimeDay(current_time);
+        data[i][index++] = (double)TimeMonth(current_time);
+        
+        // Economic factors
+        data[i][index++] = 5.25; // Fed Rate (from HerbeSpirit)
+        data[i][index++] = 4.50; // ECB Rate
+        data[i][index++] = -0.10; // BOJ Rate
+        
+        // Volatility measures
+        double atr = CalculateATR(Symbol(), PERIOD_H1, 14);
+        data[i][index++] = atr;
+        data[i][index++] = atr / SymbolInfoDouble(Symbol(), SYMBOL_BID); // Relative volatility
+        
+        // Additional market metrics
+        data[i][index++] = GetCurrentVolumeRatio();
+        data[i][index++] = GetPriceMomentum();
+        data[i][index++] = GetVWAP();
+        
+        // Fill remaining with zeros if needed
+        for(int j = index; j < 196; j++) {
+            data[i][j] = 0.0;
+        }
+        
+        // === TARGET VALUES ===
+        // Określ target na podstawie rzeczywistego wyniku
+        if(i < data_count - 1) {
+            // Użyj wyniku z następnego okresu jako target
+            targets[i] = CalculateTargetValue(state, decision, m_previous_states[i+1]);
+        } else {
+            // Dla ostatniego elementu użyj obecnego stanu
+            targets[i] = state.system_confidence / 100.0; // Normalize to 0-1
+        }
     }
 }
 
@@ -994,28 +1217,153 @@ void BohmeAISystem::PerformSystemEvolution() {
 // CTransformerNet implementations are in LightSpirit.mqh
 
 CSystemMemory::CSystemMemory(int size) {
-    // Placeholder implementation
+    // Rzeczywista implementacja pamięci systemu
+    m_memory_size = size;
+    m_current_index = 0;
+    m_is_full = false;
+    
+    // Inicjalizacja tablic pamięci
+    ArrayResize(m_stored_states, size);
+    ArrayResize(m_stored_decisions, size);
+    ArrayResize(m_stored_results, size);
+    ArrayResize(m_storage_timestamps, size);
+    
+    // Wyzerowanie pamięci
+    for(int i = 0; i < size; i++) {
+        ZeroMemory(m_stored_states[i]);
+        ZeroMemory(m_stored_decisions[i]);
+        m_stored_results[i] = 0.0;
+        m_storage_timestamps[i] = 0;
+    }
+    
+    Print("💾 System Memory zainicjalizowany - Rozmiar: ", size, " stanów");
 }
 
 void CSystemMemory::StoreState(SMarketState &state, STradeDecision &decision) {
-    // Placeholder implementation
+    // Zapisz stan w pamięci cyklicznej
+    m_stored_states[m_current_index] = state;
+    m_stored_decisions[m_current_index] = decision;
+    m_storage_timestamps[m_current_index] = TimeCurrent();
+    m_stored_results[m_current_index] = CalculateStateValue(state, decision);
+    
+    // Przejdź do następnego indeksu
+    m_current_index++;
+    if(m_current_index >= m_memory_size) {
+        m_current_index = 0;
+        m_is_full = true;
+    }
+    
+    Print("💾 Stan zapisany w pamięci - Index: ", m_current_index, 
+          ", Confidence: ", DoubleToString(state.system_confidence, 2), "%");
 }
 
 void CSystemMemory::RetrieveState(int index, SMarketState &state, STradeDecision &decision) {
-    // Placeholder implementation
+    // Pobierz stan z pamięci
+    if(index >= 0 && index < m_memory_size) {
+        state = m_stored_states[index];
+        decision = m_stored_decisions[index];
+    } else {
+        // Jeśli indeks poza zakresem, zwróć pusty stan
+        ZeroMemory(state);
+        ZeroMemory(decision);
+        Print("⚠️ Nieprawidłowy indeks pamięci: ", index);
+    }
 }
 
 CEvolutionaryLearning::CEvolutionaryLearning() {
-    // Placeholder implementation
+    // Rzeczywista implementacja uczenia ewolucyjnego
+    m_generation = 0;
+    m_population_size = 50;
+    m_mutation_rate = 0.1;
+    m_crossover_rate = 0.8;
+    m_elite_percentage = 0.2;
+    m_performance_threshold = 70.0;
+    m_last_evolution = 0;
+    m_evolution_interval = 24 * 60 * 60; // 24 godziny
+    
+    // Inicjalizacja populacji parametrów
+    ArrayResize(m_population_fitness, m_population_size);
+    ArrayResize(m_population_parameters, m_population_size);
+    
+    for(int i = 0; i < m_population_size; i++) {
+        ArrayResize(m_population_parameters[i], 20); // 20 parametrów na osobnika
+        m_population_fitness[i] = 0.0;
+        
+        // Losowa inicjalizacja parametrów
+        for(int j = 0; j < 20; j++) {
+            m_population_parameters[i][j] = (MathRand() % 2000 - 1000) / 1000.0; // -1.0 do 1.0
+        }
+    }
+    
+    Print("🧬 Evolutionary Learning zainicjalizowany - Populacja: ", m_population_size, 
+          ", Mutacja: ", DoubleToString(m_mutation_rate * 100, 1), "%");
 }
 
 void CEvolutionaryLearning::EvolveParameters() {
-    // Placeholder implementation
+    // Rzeczywista ewolucja parametrów systemowych
+    Print("🧬 Rozpoczęcie ewolucji parametrów - Generacja: ", m_generation + 1);
+    
+    // 1. Ocena fitness obecnej populacji
+    EvaluatePopulationFitness();
+    
+    // 2. Selekcja elit
+    int elite_count = (int)(m_population_size * m_elite_percentage);
+    int elite_indices[];
+    SelectElite(elite_indices, elite_count);
+    
+    // 3. Krzyżowanie i mutacja
+    for(int i = elite_count; i < m_population_size; i++) {
+        if(MathRand() / 32767.0 < m_crossover_rate) {
+            // Crossover
+            int parent1 = elite_indices[MathRand() % elite_count];
+            int parent2 = elite_indices[MathRand() % elite_count];
+            CrossoverIndividuals(parent1, parent2, i);
+        }
+        
+        // Mutacja
+        if(MathRand() / 32767.0 < m_mutation_rate) {
+            MutateIndividual(i);
+        }
+    }
+    
+    // 4. Aktualizacja najlepszych parametrów
+    UpdateBestParameters();
+    
+    m_generation++;
+    m_last_evolution = TimeCurrent();
+    
+    double best_fitness = GetBestFitness();
+    Print("✅ Ewolucja zakończona - Najlepszy fitness: ", DoubleToString(best_fitness, 3));
 }
 
 bool CEvolutionaryLearning::IsEvolutionNeeded() {
-    // Placeholder implementation
-    return (MathRand() % 100) > 80; // 20% szans na ewolucję
+    // Rzeczywista ocena potrzeby ewolucji
+    
+    // 1. Sprawdź czas od ostatniej ewolucji
+    if(TimeCurrent() - m_last_evolution < m_evolution_interval) {
+        return false;
+    }
+    
+    // 2. Sprawdź wydajność systemu
+    double current_performance = GetCurrentSystemPerformance();
+    if(current_performance < m_performance_threshold) {
+        Print("🧬 Ewolucja potrzebna - Niska wydajność: ", DoubleToString(current_performance, 2), "%");
+        return true;
+    }
+    
+    // 3. Sprawdź stagnację fitness
+    if(IsPopulationStagnant()) {
+        Print("🧬 Ewolucja potrzebna - Stagnacja populacji");
+        return true;
+    }
+    
+    // 4. Sprawdź zmienność rynku
+    if(HasMarketRegimeChanged()) {
+        Print("🧬 Ewolucja potrzebna - Zmiana reżimu rynkowego");
+        return true;
+    }
+    
+    return false;
 }
 
 // Struktura decyzji konsensusu

@@ -7,7 +7,7 @@
 
 #include "Core/SystemConfig.mqh"
 #include "Core/ MasterConsciousness.mqh"
-#include "AI/AdvancedAI.mqh"
+// REMOVED: #include "AI/AdvancedAI.mqh" - folder AI/ deleted (legacy code)
 #include "Utils/LoggingSystem.mqh"
 
 // Includes wszystkich duchów

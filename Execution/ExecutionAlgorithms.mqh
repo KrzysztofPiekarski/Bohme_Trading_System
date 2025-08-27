@@ -700,17 +700,139 @@ public:
         stats.failed_orders = m_total_executions - m_successful_executions;
         stats.success_rate = m_total_executions > 0 ? (double)m_successful_executions / m_total_executions * 100 : 0;
         stats.average_execution_time = m_average_execution_time;
-        stats.total_volume = 0; // TODO: Implement volume tracking
-        stats.last_order_time = 0; // TODO: Implement last order time tracking
+        
+        // Rzeczywiste śledzenie volume i P&L
+        stats.total_volume = CalculateTotalVolume();
+        stats.last_order_time = GetLastOrderTime();
         stats.last_order_symbol = m_symbol;
-        stats.total_profit = 0; // TODO: Implement profit tracking
-        stats.total_loss = 0; // TODO: Implement loss tracking
-        stats.net_pnl = 0; // TODO: Implement PnL tracking
+        stats.total_profit = CalculateTotalProfit();
+        stats.total_loss = CalculateTotalLoss();
+        stats.net_pnl = stats.total_profit - stats.total_loss;
+        
         return stats;
     }
     
     string GetExecutionReport() {
         return GetStatusReport();
+    }
+    
+    // === NOWE FUNKCJE ŚLEDZENIA P&L ===
+    double CalculateTotalVolume() {
+        double total_volume = 0.0;
+        
+        // Iteracja przez wszystkie pozycje
+        for(int i = 0; i < PositionsTotal(); i++) {
+            if(PositionGetTicket(i) > 0) {
+                if(PositionGetString(POSITION_SYMBOL) == m_symbol) {
+                    total_volume += PositionGetDouble(POSITION_VOLUME);
+                }
+            }
+        }
+        
+        // Dodaj historyczne pozycje z dzisiaj
+        datetime today_start = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
+        HistorySelect(today_start, TimeCurrent());
+        
+        for(int i = 0; i < HistoryDealsTotal(); i++) {
+            ulong ticket = HistoryDealGetTicket(i);
+            if(ticket > 0) {
+                if(HistoryDealGetString(ticket, DEAL_SYMBOL) == m_symbol) {
+                    total_volume += HistoryDealGetDouble(ticket, DEAL_VOLUME);
+                }
+            }
+        }
+        
+        return total_volume;
+    }
+    
+    datetime GetLastOrderTime() {
+        datetime last_time = 0;
+        
+        // Sprawdź ostatnie zlecenie z dzisiaj
+        datetime today_start = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
+        HistorySelect(today_start, TimeCurrent());
+        
+        for(int i = 0; i < HistoryDealsTotal(); i++) {
+            ulong ticket = HistoryDealGetTicket(i);
+            if(ticket > 0) {
+                if(HistoryDealGetString(ticket, DEAL_SYMBOL) == m_symbol) {
+                    datetime deal_time = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+                    if(deal_time > last_time) {
+                        last_time = deal_time;
+                    }
+                }
+            }
+        }
+        
+        return last_time;
+    }
+    
+    double CalculateTotalProfit() {
+        double total_profit = 0.0;
+        
+        // Zyski z otwartych pozycji
+        for(int i = 0; i < PositionsTotal(); i++) {
+            if(PositionGetTicket(i) > 0) {
+                if(PositionGetString(POSITION_SYMBOL) == m_symbol) {
+                    double profit = PositionGetDouble(POSITION_PROFIT);
+                    if(profit > 0) {
+                        total_profit += profit;
+                    }
+                }
+            }
+        }
+        
+        // Zyski z zamkniętych pozycji dzisiaj
+        datetime today_start = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
+        HistorySelect(today_start, TimeCurrent());
+        
+        for(int i = 0; i < HistoryDealsTotal(); i++) {
+            ulong ticket = HistoryDealGetTicket(i);
+            if(ticket > 0) {
+                if(HistoryDealGetString(ticket, DEAL_SYMBOL) == m_symbol) {
+                    double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+                    if(profit > 0) {
+                        total_profit += profit;
+                    }
+                }
+            }
+        }
+        
+        return total_profit;
+    }
+    
+    double CalculateTotalLoss() {
+        double total_loss = 0.0;
+        
+        // Straty z otwartych pozycji
+        for(int i = 0; i < PositionsTotal(); i++) {
+            if(PositionGetTicket(i) > 0) {
+                if(PositionGetString(POSITION_SYMBOL) == m_symbol) {
+                    double profit = PositionGetDouble(POSITION_PROFIT);
+                    if(profit < 0) {
+                        total_loss += MathAbs(profit);
+                    }
+                }
+            }
+        }
+        
+        // Straty z zamkniętych pozycji dzisiaj
+        datetime today_start = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
+        HistorySelect(today_start, TimeCurrent());
+        
+        for(int i = 0; i < HistoryDealsTotal(); i++) {
+            ulong ticket = HistoryDealGetTicket(i);
+            if(ticket > 0) {
+                if(HistoryDealGetString(ticket, DEAL_SYMBOL) == m_symbol) {
+                    double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+                    if(profit < 0) {
+                        total_loss += MathAbs(profit);
+                    }
+                }
+            }
+        }
+        
+        return total_loss;
     }
     
     string GetStatusReport() {

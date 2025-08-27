@@ -1273,11 +1273,37 @@ RiskStatistics CRiskManager::GetStatistics() {
     stats.risk_per_trade = m_risk_parameters.risk_per_trade;
     stats.daily_risk = m_risk_parameters.risk_per_day;
     stats.portfolio_risk = m_risk_analysis.total_risk_score;
-    stats.open_positions = 0; // TODO: Implement position counting
-    stats.total_exposure = m_risk_analysis.total_exposure;
+    stats.open_positions = PositionsTotal(); // Rzeczywista liczba pozycji
+    stats.total_exposure = CalculateRealExposure(); // Rzeczywiste exposure
     stats.max_drawdown = m_risk_analysis.max_drawdown;
     // Note: var_95, var_99, and last_risk_update fields don't exist in RiskStatistics struct
     return stats;
+}
+
+double CRiskManager::CalculateRealExposure() {
+    double total_exposure = 0.0;
+    
+    // Oblicz rzeczywiste exposure z wszystkich pozycji
+    for(int i = 0; i < PositionsTotal(); i++) {
+        if(PositionGetTicket(i) > 0) {
+            double volume = PositionGetDouble(POSITION_VOLUME);
+            double price = PositionGetDouble(POSITION_PRICE_OPEN);
+            string symbol = PositionGetString(POSITION_SYMBOL);
+            
+            // Oblicz wartość pozycji w walucie konta
+            double position_value = volume * price;
+            
+            // Konwersja na walutę konta jeśli potrzebna
+            if(StringFind(symbol, AccountInfoString(ACCOUNT_CURRENCY)) < 0) {
+                // Uproszczona konwersja - w rzeczywistości potrzebna byłaby dokładna kalkulacja
+                position_value *= SymbolInfoDouble(symbol, SYMBOL_BID);
+            }
+            
+            total_exposure += position_value;
+        }
+    }
+    
+    return total_exposure;
 }
 
 string CRiskManager::GetRiskReport() {

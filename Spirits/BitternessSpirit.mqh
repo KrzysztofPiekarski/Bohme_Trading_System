@@ -241,11 +241,20 @@ private:
     // Wave analysis
     CWaveAnalyzer* m_wave_analyzer;
     
-    // Helper functions
+    // Helper functions - REAL IMPLEMENTATIONS
     double CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe);
     double DetectMomentumDivergence();
     double CalculateVolumeBreakthrough();
     bool ValidateBreakthrough(double momentum_strength);
+    
+    // NOWE - rzeczywiste funkcje momentum
+    double CalculateRateOfChange(ENUM_TIMEFRAMES timeframe, int period);
+    double CalculateMomentumOscillator(ENUM_TIMEFRAMES timeframe);
+    double CalculateAccelerationDecelerator(ENUM_TIMEFRAMES timeframe);
+    double CalculateChaikinOscillator(ENUM_TIMEFRAMES timeframe);
+    double CalculateVolumeRateOfChange(ENUM_TIMEFRAMES timeframe);
+    bool DetectMomentumBreakout(ENUM_TIMEFRAMES timeframe);
+    double CalculateMomentumAlignment();
     
 public:
     BitternessSpirit();
@@ -292,37 +301,52 @@ BitternessSpirit::BitternessSpirit() {
 
 // Główna funkcja konwergencji momentum
 double BitternessSpirit::CalculateMomentumConvergence() {
-    // Collect momentum from all timeframes
-    double tf_momentum[7];
-    tf_momentum[0] = CalculateTimeframeMomentum(PERIOD_M1);
-    tf_momentum[1] = CalculateTimeframeMomentum(PERIOD_M5);
-    tf_momentum[2] = CalculateTimeframeMomentum(PERIOD_M15);
-    tf_momentum[3] = CalculateTimeframeMomentum(PERIOD_M30);
-    tf_momentum[4] = CalculateTimeframeMomentum(PERIOD_H1);
-    tf_momentum[5] = CalculateTimeframeMomentum(PERIOD_H4);
-    tf_momentum[6] = CalculateTimeframeMomentum(PERIOD_D1);
+    // RZECZYWISTA implementacja momentum convergence
+    ENUM_TIMEFRAMES timeframes[] = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_M30, PERIOD_H1, PERIOD_H4, PERIOD_D1};
+    double momentum_scores[7];
+    double volume_scores[7];
     
-    // Calculate convergence using correlation
-    double convergence = 0.0;
-    int pair_count = 0;
-    
+    // Oblicz rzeczywiste momentum dla każdego timeframe
     for(int i = 0; i < 7; i++) {
-        for(int j = i + 1; j < 7; j++) {
-            // Weighted correlation based on timeframe importance
-            double weight = GetTimeframeWeight(i) * GetTimeframeWeight(j);
-            double correlation = CalculateCorrelation(tf_momentum[i], tf_momentum[j]);
-            convergence += correlation * weight;
-            pair_count++;
+        // Price momentum - Rate of Change + Acceleration/Deceleration
+        double roc = CalculateRateOfChange(timeframes[i], 14);
+        double ac = CalculateAccelerationDecelerator(timeframes[i]);
+        double mom_osc = CalculateMomentumOscillator(timeframes[i]);
+        
+        // Volume momentum - Chaikin Oscillator + Volume ROC
+        double chaikin = CalculateChaikinOscillator(timeframes[i]);
+        double vol_roc = CalculateVolumeRateOfChange(timeframes[i]);
+        
+        // Combined scores
+        momentum_scores[i] = (roc * 0.4 + ac * 0.3 + mom_osc * 0.3);
+        volume_scores[i] = (chaikin * 0.6 + vol_roc * 0.4);
+        
+        // Boost dla breakout
+        if(DetectMomentumBreakout(timeframes[i])) {
+            momentum_scores[i] *= 1.3;
         }
     }
     
-    convergence /= pair_count;
+    // Oblicz directional consensus
+    int bullish_tf = 0, bearish_tf = 0;
+    double total_strength = 0.0;
     
-    // Apply fractal dimension adjustment
-    double fractal_dimension = m_fractal_calculator.CalculateDimension();
-    convergence *= (2.0 - fractal_dimension); // Higher dimension = lower convergence
+    for(int i = 0; i < 7; i++) {
+        double weight = GetTimeframeWeight(i);
+        double combined = (momentum_scores[i] + volume_scores[i]) / 2.0;
+        
+        if(combined > 10.0) bullish_tf++;
+        else if(combined < -10.0) bearish_tf++;
+        
+        total_strength += MathAbs(combined) * weight;
+    }
     
-    return MathMax(0, MathMin(100, (convergence + 1.0) * 50.0));
+    // Convergence calculation
+    double consensus = MathMax(bullish_tf, bearish_tf) / 7.0 * 100.0;
+    double strength = MathMin(total_strength / 10.0, 100.0);
+    double alignment = CalculateMomentumAlignment();
+    
+    return MathMax(0.0, MathMin(100.0, consensus * 0.4 + strength * 0.4 + alignment * 0.2));
 }
 
 // Detekcja momentu przełamania
@@ -724,6 +748,197 @@ void BitternessSpirit::UpdateMomentumData() {
     if(m_wave_analyzer != NULL) {
         m_wave_analyzer.UpdateWaveData();
     }
+}
+
+// === RZECZYWISTE IMPLEMENTACJE MOMENTUM FUNCTIONS ===
+
+double BitternessSpirit::CalculateRateOfChange(ENUM_TIMEFRAMES timeframe, int period) {
+    double prices[];
+    if(CopyClose(Symbol(), timeframe, 0, period + 1, prices) != period + 1) {
+        return 0.0;
+    }
+    
+    double current_price = prices[period];
+    double past_price = prices[0];
+    
+    if(past_price == 0) return 0.0;
+    
+    // ROC = ((Current - Past) / Past) * 100
+    return ((current_price - past_price) / past_price) * 100.0;
+}
+
+double BitternessSpirit::CalculateMomentumOscillator(ENUM_TIMEFRAMES timeframe) {
+    // Momentum = Close - Close[n periods ago]
+    double prices[];
+    int period = 14;
+    
+    if(CopyClose(Symbol(), timeframe, 0, period + 1, prices) != period + 1) {
+        return 0.0;
+    }
+    
+    double momentum = prices[period] - prices[0];
+    
+    // Normalize to percentage
+    if(prices[0] != 0) {
+        momentum = (momentum / prices[0]) * 100.0;
+    }
+    
+    return momentum;
+}
+
+double BitternessSpirit::CalculateAccelerationDecelerator(ENUM_TIMEFRAMES timeframe) {
+    // AC = AO - SMA(AO, 5)
+    // AO = SMA(HL/2, 5) - SMA(HL/2, 34)
+    
+    double high[], low[];
+    int bars = 40; // Need extra bars for SMA calculations
+    
+    if(CopyHigh(Symbol(), timeframe, 0, bars, high) != bars ||
+       CopyLow(Symbol(), timeframe, 0, bars, low) != bars) {
+        return 0.0;
+    }
+    
+    // Calculate HL/2 (median prices)
+    double median_prices[];
+    ArrayResize(median_prices, bars);
+    for(int i = 0; i < bars; i++) {
+        median_prices[i] = (high[i] + low[i]) / 2.0;
+    }
+    
+    // Calculate AO = SMA(HL/2, 5) - SMA(HL/2, 34)
+    double ao_current = 0.0, ao_prev = 0.0;
+    
+    // Current AO
+    double sma5_current = 0.0, sma34_current = 0.0;
+    for(int i = bars - 5; i < bars; i++) sma5_current += median_prices[i];
+    for(int i = bars - 34; i < bars; i++) sma34_current += median_prices[i];
+    ao_current = (sma5_current / 5.0) - (sma34_current / 34.0);
+    
+    // Previous AO (5 periods back for AC calculation)
+    double sma5_prev = 0.0, sma34_prev = 0.0;
+    for(int i = bars - 10; i < bars - 5; i++) sma5_prev += median_prices[i];
+    for(int i = bars - 39; i < bars - 5; i++) sma34_prev += median_prices[i];
+    ao_prev = (sma5_prev / 5.0) - (sma34_prev / 34.0);
+    
+    // AC = Current AO - SMA of AO
+    // Simplified: AC ≈ AO momentum
+    return (ao_current - ao_prev) * 10000.0; // Scale for visibility
+}
+
+double BitternessSpirit::CalculateChaikinOscillator(ENUM_TIMEFRAMES timeframe) {
+    // Chaikin Oscillator = EMA(ADL, 3) - EMA(ADL, 10)
+    
+    double high[], low[], close[];
+    long volume[];
+    int bars = 20;
+    
+    if(CopyHigh(Symbol(), timeframe, 0, bars, high) != bars ||
+       CopyLow(Symbol(), timeframe, 0, bars, low) != bars ||
+       CopyClose(Symbol(), timeframe, 0, bars, close) != bars ||
+       CopyTickVolume(Symbol(), timeframe, 0, bars, volume) != bars) {
+        return 0.0;
+    }
+    
+    // Calculate ADL (Accumulation/Distribution Line)
+    double adl = 0.0;
+    double adl_values[];
+    ArrayResize(adl_values, bars);
+    
+    for(int i = 0; i < bars; i++) {
+        if(high[i] != low[i]) {
+            double money_flow_multiplier = ((close[i] - low[i]) - (high[i] - close[i])) / (high[i] - low[i]);
+            double money_flow_volume = money_flow_multiplier * volume[i];
+            adl += money_flow_volume;
+        }
+        adl_values[i] = adl;
+    }
+    
+    // Calculate EMA(ADL, 3) and EMA(ADL, 10)
+    double ema3 = adl_values[bars-1];
+    double ema10 = adl_values[bars-1];
+    
+    // Simplified EMA calculation
+    for(int i = bars - 10; i < bars; i++) {
+        ema3 = (adl_values[i] * 2.0 + ema3 * 2.0) / 4.0;
+        ema10 = (adl_values[i] * 2.0 + ema10 * 18.0) / 20.0;
+    }
+    
+    return (ema3 - ema10) / 1000.0; // Scale for readability
+}
+
+double BitternessSpirit::CalculateVolumeRateOfChange(ENUM_TIMEFRAMES timeframe) {
+    long volume[];
+    int period = 14;
+    
+    if(CopyTickVolume(Symbol(), timeframe, 0, period + 1, volume) != period + 1) {
+        return 0.0;
+    }
+    
+    long current_volume = volume[period];
+    long past_volume = volume[0];
+    
+    if(past_volume == 0) return 0.0;
+    
+    // Volume ROC = ((Current Volume - Past Volume) / Past Volume) * 100
+    return ((double)(current_volume - past_volume) / past_volume) * 100.0;
+}
+
+bool BitternessSpirit::DetectMomentumBreakout(ENUM_TIMEFRAMES timeframe) {
+    // Multi-criteria breakout detection
+    
+    double roc = CalculateRateOfChange(timeframe, 14);
+    double mom_osc = CalculateMomentumOscillator(timeframe);
+    double vol_roc = CalculateVolumeRateOfChange(timeframe);
+    
+    // Breakout criteria:
+    // 1. Strong price momentum (ROC > 2% or < -2%)
+    // 2. Confirming momentum oscillator (same direction)
+    // 3. Volume expansion (Volume ROC > 50%)
+    
+    bool price_breakout = (MathAbs(roc) > 2.0);
+    bool momentum_confirm = (roc > 0 && mom_osc > 0) || (roc < 0 && mom_osc < 0);
+    bool volume_confirm = (vol_roc > 50.0);
+    
+    return price_breakout && momentum_confirm && volume_confirm;
+}
+
+double BitternessSpirit::CalculateMomentumAlignment() {
+    // Calculate alignment between different momentum indicators
+    ENUM_TIMEFRAMES timeframes[] = {PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
+    int tf_count = 4;
+    
+    double roc_values[4];
+    double mom_values[4];
+    double vol_values[4];
+    
+    for(int i = 0; i < tf_count; i++) {
+        roc_values[i] = CalculateRateOfChange(timeframes[i], 14);
+        mom_values[i] = CalculateMomentumOscillator(timeframes[i]);
+        vol_values[i] = CalculateVolumeRateOfChange(timeframes[i]);
+    }
+    
+    // Count timeframes with same directional bias
+    int bullish_roc = 0, bearish_roc = 0;
+    int bullish_mom = 0, bearish_mom = 0;
+    int bullish_vol = 0, bearish_vol = 0;
+    
+    for(int i = 0; i < tf_count; i++) {
+        if(roc_values[i] > 0.5) bullish_roc++;
+        else if(roc_values[i] < -0.5) bearish_roc++;
+        
+        if(mom_values[i] > 0.5) bullish_mom++;
+        else if(mom_values[i] < -0.5) bearish_mom++;
+        
+        if(vol_values[i] > 10.0) bullish_vol++;
+        else if(vol_values[i] < -10.0) bearish_vol++;
+    }
+    
+    // Calculate alignment score
+    double roc_alignment = MathMax(bullish_roc, bearish_roc) / (double)tf_count * 100.0;
+    double mom_alignment = MathMax(bullish_mom, bearish_mom) / (double)tf_count * 100.0;
+    double vol_alignment = MathMax(bullish_vol, bearish_vol) / (double)tf_count * 100.0;
+    
+    return (roc_alignment * 0.4 + mom_alignment * 0.4 + vol_alignment * 0.2);
 }
 
 // Destruktor

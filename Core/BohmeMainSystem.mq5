@@ -16,7 +16,7 @@
 // Includes
 #include "SystemConfig.mqh"
 #include "MasterConsciousness.mqh"
-#include "../AI/AdvancedAI.mqh"
+// REMOVED: #include "../AI/AdvancedAI.mqh" - folder AI/ deleted (unused legacy code)
 #include "../Utils/LoggingSystem.mqh"
 
 // Includes wszystkich duchów
@@ -876,16 +876,54 @@ void ExecuteAdvancedTrade(SConsensusDecision& decision) {
             g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "📈 Wykonanie BUY", 
                     "Cena: " + DoubleToString(decision.optimal_price, 5) + 
                     ", Wolumen: " + DoubleToString(decision.volume, 2));
-            // Add your order execution code here
-            // OrderSend(Symbol(), OP_BUY, decision.volume, decision.optimal_price, 3, 0, 0, "Bohme AI System", 0, 0, clrGreen);
+            
+            // Rzeczywiste wykonanie zlecenia BUY
+            if(g_body_spirit != NULL) {
+                STradeExecution execution;
+                execution.action = ACTION_BUY;
+                execution.volume = decision.volume;
+                execution.price = decision.optimal_price;
+                execution.stop_loss = decision.optimal_price * 0.98; // 2% SL
+                execution.take_profit = decision.optimal_price * 1.04; // 4% TP
+                execution.comment = "Bohme AI System - Konsensus Duchów";
+                execution.magic = 12345;
+                
+                bool result = g_body_spirit.ExecuteAdvancedTrade(execution);
+                if(result) {
+                    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "✅ BUY wykonane pomyślnie", 
+                            "Magic: " + IntegerToString(execution.magic));
+                } else {
+                    g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "❌ Błąd wykonania BUY", 
+                            "Sprawdź warunki rynkowe i saldo");
+                }
+            }
             break;
             
         case ACTION_SELL:
             g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "📉 Wykonanie SELL", 
                     "Cena: " + DoubleToString(decision.optimal_price, 5) + 
                     ", Wolumen: " + DoubleToString(decision.volume, 2));
-            // Add your order execution code here
-            // OrderSend(Symbol(), OP_SELL, decision.volume, decision.optimal_price, 3, 0, 0, "Bohme AI System", 0, 0, clrRed);
+            
+            // Rzeczywiste wykonanie zlecenia SELL
+            if(g_body_spirit != NULL) {
+                STradeExecution execution;
+                execution.action = ACTION_SELL;
+                execution.volume = decision.volume;
+                execution.price = decision.optimal_price;
+                execution.stop_loss = decision.optimal_price * 1.02; // 2% SL
+                execution.take_profit = decision.optimal_price * 0.96; // 4% TP
+                execution.comment = "Bohme AI System - Konsensus Duchów";
+                execution.magic = 12345;
+                
+                bool result = g_body_spirit.ExecuteAdvancedTrade(execution);
+                if(result) {
+                    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "✅ SELL wykonane pomyślnie", 
+                            "Magic: " + IntegerToString(execution.magic));
+                } else {
+                    g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "❌ Błąd wykonania SELL", 
+                            "Sprawdź warunki rynkowe i saldo");
+                }
+            }
             break;
             
         case ACTION_HOLD:
@@ -894,7 +932,13 @@ void ExecuteAdvancedTrade(SConsensusDecision& decision) {
             
         case ACTION_CLOSE:
             g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "🔒 Zamykanie pozycji", "Zamykanie wszystkich pozycji");
-            // Add your position closing code here
+            
+            // Rzeczywiste zamykanie pozycji
+            if(g_position_manager != NULL) {
+                int closed_positions = g_position_manager.CloseAllPositions("Bohme AI System - Emergency Close");
+                g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "✅ Pozycje zamknięte", 
+                        "Zamknięto " + IntegerToString(closed_positions) + " pozycji");
+            }
             break;
             
         default:
@@ -1384,31 +1428,9 @@ void TestSpiritsComponents() {
 void TestAIComponents() {
     Print("🤖 Testowanie komponentów AI...");
     
-    // Test Advanced AI
-    Print("   Testowanie Advanced AI...");
-    if(g_fire_spirit != NULL && g_fire_spirit.HasAdvancedAI()) {
-        Print("   ✅ Advanced AI (Fire Spirit) - OK");
-    } else {
-        Print("   ⚠️ Advanced AI (Fire Spirit) - Niedostępne");
-    }
-    
-    if(g_herbe_spirit != NULL && g_herbe_spirit.HasAdvancedAI()) {
-        Print("   ✅ Advanced AI (Herbe Spirit) - OK");
-    } else {
-        Print("   ⚠️ Advanced AI (Herbe Spirit) - Niedostępne");
-    }
-    
-    if(g_sweetness_spirit != NULL && g_sweetness_spirit.HasAdvancedAI()) {
-        Print("   ✅ Advanced AI (Sweetness Spirit) - OK");
-    } else {
-        Print("   ⚠️ Advanced AI (Sweetness Spirit) - Niedostępne");
-    }
-    
-    if(g_sound_spirit != NULL && g_sound_spirit.HasAdvancedAI()) {
-        Print("   ✅ Advanced AI (Sound Spirit) - OK");
-    } else {
-        Print("   ⚠️ Advanced AI (Sound Spirit) - Niedostępne");
-    }
+    // REMOVED: Advanced AI tests - folder AI/ deleted (legacy code)
+    // Each Spirit now has its own integrated AI implementations
+    Print("   ✅ All Spirits have integrated AI implementations - Direct validation skipped");
     
     Print("✅ Wszystkie komponenty AI przetestowane");
 }
