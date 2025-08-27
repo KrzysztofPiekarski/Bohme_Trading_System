@@ -21,6 +21,19 @@
 #define GUI_WARNING_LIGHT clrLightYellow
 #define GUI_ERROR_LIGHT clrLightCoral
 
+// Basic GUI Colors
+#define GUI_BACKGROUND_COLOR clrDarkSlateGray
+#define GUI_PANEL_COLOR clrSlateGray
+#define GUI_TEXT_COLOR clrWhite
+#define GUI_BUTTON_COLOR clrGray
+#define GUI_SUCCESS_COLOR clrGreen
+#define GUI_ERROR_COLOR clrRed
+#define GUI_WARNING_COLOR clrOrange
+#define GUI_INFO_COLOR clrCyan
+
+// GUI Layout Constants
+#define GUI_MARGIN 10
+
 // Advanced GUI Structures
 struct SAdvancedGUIElement {
     string name;
@@ -100,6 +113,13 @@ SAdvancedGUIState g_advanced_gui_state;
 SAdvancedGUIElement g_advanced_gui_elements[];
 SSpiritAdvancedStatus g_spirit_advanced_status[7];
 SSystemMetrics g_system_metrics;
+
+// Global System State Variables
+bool g_system_initialized = false;
+int g_analysis_counter = 0;
+
+// Logging Constants
+#define LOG_COMPONENT_SYSTEM "SYSTEM"
 
 // Performance Charts Data
 struct SChartData {
@@ -422,7 +442,7 @@ void UpdateAdvancedGUI() {
 void UpdateAdvancedSpiritStatus() {
     // Update each spirit with advanced metrics
     for(int i = 0; i < 7; i++) {
-        SSpiritAdvancedStatus& status = g_spirit_advanced_status[i];
+        SSpiritAdvancedStatus status = g_spirit_advanced_status[i];
         
         // Simulate advanced metrics
         if(status.is_active) {
@@ -444,6 +464,9 @@ void UpdateAdvancedSpiritStatus() {
         }
         
         status.last_update = TimeCurrent();
+        
+        // Apply changes back to the original array
+        g_spirit_advanced_status[i] = status;
         
         // Update GUI element with detailed information
         string spirit_name = status.name;
@@ -500,7 +523,7 @@ void UpdatePerformanceCharts() {
 void AddToPerformanceChart(int chart_index, double value) {
     if(chart_index < 0 || chart_index >= 7) return;
     
-    SChartData& chart = g_performance_charts[chart_index];
+    SChartData chart = g_performance_charts[chart_index];
     
     int size = ArraySize(chart.time);
     ArrayResize(chart.time, size + 1);
@@ -518,6 +541,9 @@ void AddToPerformanceChart(int chart_index, double value) {
         ArrayResize(chart.time, chart.max_points - 1);
         ArrayResize(chart.values, chart.max_points - 1);
     }
+    
+    // Apply changes back to the original array
+    g_performance_charts[chart_index] = chart;
 }
 
 //+------------------------------------------------------------------+
@@ -526,7 +552,7 @@ void AddToPerformanceChart(int chart_index, double value) {
 void AddToSystemChart(int chart_index, double value) {
     if(chart_index < 0 || chart_index >= 3) return;
     
-    SChartData& chart = g_system_charts[chart_index];
+    SChartData chart = g_system_charts[chart_index];
     
     int size = ArraySize(chart.time);
     ArrayResize(chart.time, size + 1);
@@ -544,6 +570,9 @@ void AddToSystemChart(int chart_index, double value) {
         ArrayResize(chart.time, chart.max_points - 1);
         ArrayResize(chart.values, chart.max_points - 1);
     }
+    
+    // Apply changes back to the original array
+    g_system_charts[chart_index] = chart;
 }
 
 //+------------------------------------------------------------------+
@@ -840,4 +869,44 @@ void CleanupAdvancedGUI() {
     }
     
     Print("✅ Zaawansowane GUI wyczyszczone");
+}
+
+//+------------------------------------------------------------------+
+//| Test Spirit Function (Stub)                                      |
+//+------------------------------------------------------------------+
+void TestSpirit(string spirit_name) {
+    Print("🧪 Testowanie " + spirit_name + " Spirit...");
+    // Placeholder for spirit testing logic
+}
+
+//+------------------------------------------------------------------+
+//| Test Data Components (Stub)                                      |
+//+------------------------------------------------------------------+
+void TestDataComponents() {
+    Print("🔍 Testowanie komponentów danych...");
+    // Placeholder for data components testing
+}
+
+//+------------------------------------------------------------------+
+//| Test Execution Components (Stub)                                 |
+//+------------------------------------------------------------------+
+void TestExecutionComponents() {
+    Print("⚡ Testowanie komponentów wykonania...");
+    // Placeholder for execution components testing
+}
+
+//+------------------------------------------------------------------+
+//| Test Utils Components (Stub)                                     |
+//+------------------------------------------------------------------+
+void TestUtilsComponents() {
+    Print("🛠️ Testowanie komponentów narzędziowych...");
+    // Placeholder for utils components testing
+}
+
+//+------------------------------------------------------------------+
+//| Log Info Function (Stub)                                         |
+//+------------------------------------------------------------------+
+void LogInfo(string component, string message, string details) {
+    Print("📝 [" + component + "] " + message + " - " + details);
+    // Placeholder for logging functionality
 } 

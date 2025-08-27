@@ -36,9 +36,16 @@ enum ENUM_SIGNAL_QUALITY {
 
 // Stan harmonii (używane przez Sound Spirit w AdvancedAI)
 enum ENUM_HARMONY_STATE {
-    HARMONY_DISSONANT,
+    HARMONY_DISSONANT,     // Podstawowe stany harmonii
     HARMONY_NEUTRAL,
-    HARMONY_HARMONIC
+    HARMONY_HARMONIC,
+    
+    // Rozszerzone stany harmonii dla SoundSpirit
+    HARMONY_CHAOTIC,       // Stan chaotyczny
+    HARMONY_EMERGING,      // Stan wyłaniający się
+    HARMONY_BALANCED,      // Stan zrównoważony
+    HARMONY_RESONANT,      // Stan rezonujący
+    HARMONY_TRANSCENDENT   // Stan transcendentny
 };
 
 #endif // AI_ENUMS_H

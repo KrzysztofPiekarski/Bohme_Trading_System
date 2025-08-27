@@ -1,6 +1,7 @@
 ﻿// Kompletna implementacja Ducha Cierpkości
 #include <Trade\Trade.mqh>
 #include <Arrays\ArrayObj.mqh>
+#include "../Utils/LoggingSystem.mqh"
 
 // Brakujące definicje enum
 enum ENUM_MARKET_PHASE {
@@ -57,10 +58,10 @@ double CalculateMarketStructureTension() {
 
 class HerbeQualityAI {
 private:
-    // Neural Network dla analizy napięć
-    double m_weights_input[50][20];     // Wagi wejściowe
-    double m_weights_hidden[20][10];    // Wagi ukryte
-    double m_weights_output[10][5];     // Wagi wyjściowe
+    // Neural Network dla analizy napięć (using 1D arrays for MQL5 compatibility)
+    double m_weights_input[1000];       // Wagi wejściowe (50*20)
+    double m_weights_hidden[200];       // Wagi ukryte (20*10)
+    double m_weights_output[50];        // Wagi wyjściowe (10*5)
     
     // Bufory danych
     double m_economic_data[100];        // Dane ekonomiczne
@@ -112,7 +113,7 @@ HerbeQualityAI::HerbeQualityAI() {
     // Inicjalizacja wag (Xavier initialization)
     for(int i = 0; i < 50; i++) {
         for(int j = 0; j < 20; j++) {
-            m_weights_input[i][j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (50 + 20));
+            m_weights_input[i * 20 + j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (50 + 20));
         }
     }
     
@@ -167,7 +168,7 @@ double HerbeQualityAI::ForwardPass(double &inputs[]) {
     for(int h = 0; h < 20; h++) {
         hidden_layer[h] = 0;
         for(int i = 0; i < 50; i++) {
-            hidden_layer[h] += inputs[i] * m_weights_input[i][h];
+            hidden_layer[h] += inputs[i] * m_weights_input[i * 20 + h];
         }
         hidden_layer[h] = ReLU(hidden_layer[h]);
     }
@@ -176,7 +177,7 @@ double HerbeQualityAI::ForwardPass(double &inputs[]) {
     for(int o = 0; o < 10; o++) {
         output_layer[o] = 0;
         for(int h = 0; h < 20; h++) {
-            output_layer[o] += hidden_layer[h] * m_weights_hidden[h][o];
+            output_layer[o] += hidden_layer[h] * m_weights_hidden[h * 10 + o];
         }
         output_layer[o] = Tanh(output_layer[o]);
     }
@@ -185,7 +186,7 @@ double HerbeQualityAI::ForwardPass(double &inputs[]) {
     for(int f = 0; f < 5; f++) {
         final_output[f] = 0;
         for(int o = 0; o < 10; o++) {
-            final_output[f] += output_layer[o] * m_weights_output[o][f];
+            final_output[f] += output_layer[o] * m_weights_output[o * 5 + f];
         }
         final_output[f] = Sigmoid(final_output[f]);
     }
@@ -264,7 +265,7 @@ void HerbeQualityAI::UpdateNeuralNetwork() {
     // Placeholder - prosta aktualizacja wag
     for(int i = 0; i < 50; i++) {
         for(int j = 0; j < 20; j++) {
-            m_weights_input[i][j] += (MathRand() / 32767.0 - 0.5) * 0.001; // Małe losowe zmiany
+            m_weights_input[i * 20 + j] += (MathRand() / 32767.0 - 0.5) * 0.001; // Małe losowe zmiany
         }
     }
     
@@ -337,19 +338,19 @@ bool HerbeQualityAI::Initialize() {
     // Initialize neural network weights
     for(int i = 0; i < 50; i++) {
         for(int j = 0; j < 20; j++) {
-            m_weights_input[i][j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (50 + 20));
+            m_weights_input[i * 20 + j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (50 + 20));
         }
     }
     
     for(int i = 0; i < 20; i++) {
         for(int j = 0; j < 10; j++) {
-            m_weights_hidden[i][j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (20 + 10));
+            m_weights_hidden[i * 10 + j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (20 + 10));
         }
     }
     
     for(int i = 0; i < 10; i++) {
         for(int j = 0; j < 5; j++) {
-            m_weights_output[i][j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (10 + 5));
+            m_weights_output[i * 5 + j] = (MathRand() / 32767.0 - 0.5) * 2 * MathSqrt(6.0 / (10 + 5));
         }
     }
     

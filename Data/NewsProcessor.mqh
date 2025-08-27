@@ -7,6 +7,8 @@
 // Moduł przetwarzania wiadomości i analizy sentymentu dla Systemu Böhmego
 
 #include <Trade\Trade.mqh>
+#include <Object.mqh>
+#include <Arrays\ArrayObj.mqh>
 
 // === ENUMERACJE ===
 
@@ -709,7 +711,8 @@ public:
     }
     
     bool ShouldUseWideStops(NewsItem &news, SentimentAnalysis &sentiment) {
-        return sentiment.volatility_impact > 0.8 || 
+        double volatility_impact = CalculateVolatilityImpact(news, sentiment);
+        return volatility_impact > 0.8 || 
                (news.type == NEWS_CENTRAL_BANK && sentiment.is_extreme);
     }
     
@@ -1217,21 +1220,18 @@ public:
                     
                     // Filtrowanie wiadomości biznesowych
                     if(StringFind(title, "Fed") >= 0 || StringFind(title, "Federal Reserve") >= 0) {
-                        AddNewsItem("Reuters - " + title, "Federal Reserve news from Reuters", 
-                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
-                                "USD", current_time - 1800, 0.1, 0.85, 0.7, true, true, true);
+                        AddNews("Reuters - " + title, "Federal Reserve news from Reuters", 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
                         news_added++;
                     }
                     else if(StringFind(title, "Market") >= 0 || StringFind(title, "Stock") >= 0) {
-                        AddNewsItem("Reuters - " + title, "Market news from Reuters", 
-                                NEWS_CORPORATE, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
-                                "USD", current_time - 3600, 0.0, 0.80, 0.5, true, true, false);
+                        AddNews("Reuters - " + title, "Market news from Reuters", 
+                                NEWS_CORPORATE, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
                         news_added++;
                     }
                     else if(StringFind(title, "Economy") >= 0 || StringFind(title, "GDP") >= 0) {
-                        AddNewsItem("Reuters - " + title, "Economic news from Reuters", 
-                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
-                                "USD", current_time - 2700, 0.0, 0.90, 0.8, true, true, true);
+                        AddNews("Reuters - " + title, "Economic news from Reuters", 
+                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
                         news_added++;
                     }
                 }
@@ -1250,9 +1250,8 @@ public:
                     ENUM_SENTIMENT_LEVEL sentiment_level = ConvertSentimentToLevel(sentiment);
                     
                     if(StringFind(description, "Fed") >= 0 || StringFind(description, "Federal Reserve") >= 0) {
-                        AddNewsItem("Reuters - Fed News", description, 
-                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_HIGH, 
-                                "USD", current_time - 1800, sentiment, 0.85, 0.7, true, true, true);
+                        AddNews("Reuters - Fed News", description, 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
                         news_added++;
                     }
                 }
@@ -1318,15 +1317,13 @@ public:
     void SimulateRSSData() {
         datetime current_time = TimeCurrent();
         
-        AddNewsItem("Reuters - Fed Signals Rate Cut", 
+        AddNews("Reuters - Fed Signals Rate Cut", 
                    "Federal Reserve signals potential interest rate cut in next meeting", 
-                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
-                   "USD", current_time - 1800, 0.1, 0.85, 0.7, true, true, true);
+                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
         
-        AddNewsItem("Reuters - Market Rally Continues", 
+        AddNews("Reuters - Market Rally Continues", 
                    "Stock market continues rally as tech stocks lead gains", 
-                   NEWS_CORPORATE, NEWS_SOURCE_REUTERS, SENTIMENT_POSITIVE, NEWS_IMPACT_MEDIUM, 
-                   "USD", current_time - 3600, 0.3, 0.90, 0.5, true, true, false);
+                   NEWS_CORPORATE, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
     }
     
     // Pobieranie z API
@@ -1392,15 +1389,13 @@ public:
                     ENUM_SENTIMENT_LEVEL sentiment_level = ConvertSentimentToLevel(sentiment);
                     
                     if(StringFind(title, "ECB") >= 0 || StringFind(title, "European Central Bank") >= 0) {
-                        AddNewsItem("Bloomberg - " + title, "European Central Bank maintains current monetary policy stance", 
-                                NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, sentiment_level, NEWS_IMPACT_HIGH, 
-                                "EUR", current_time - 7200, sentiment, 0.95, 0.8, true, true, true);
+                        AddNews("Bloomberg - " + title, "European Central Bank maintains current monetary policy stance", 
+                                NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, "EUR", "EURUSD");
                         news_added++;
                     }
                     else if(StringFind(title, "Brexit") >= 0) {
-                        AddNewsItem("Financial Times - " + title, "Latest developments in Brexit negotiations affect market sentiment", 
-                                NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, sentiment_level, NEWS_IMPACT_HIGH, 
-                                "GBP", current_time - 5400, sentiment, 0.88, 0.9, true, true, true);
+                        AddNews("Financial Times - " + title, "Latest developments in Brexit negotiations affect market sentiment", 
+                                NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, "GBP", "GBPUSD");
                         news_added++;
                     }
                 }
@@ -1416,15 +1411,13 @@ public:
     void SimulateAPIData() {
         datetime current_time = TimeCurrent();
         
-        AddNewsItem("Bloomberg - ECB Policy Decision", 
+        AddNews("Bloomberg - ECB Policy Decision", 
                    "European Central Bank maintains current monetary policy stance", 
-                   NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, SENTIMENT_NEUTRAL, NEWS_IMPACT_HIGH, 
-                   "EUR", current_time - 7200, 0.0, 0.95, 0.8, true, true, true);
+                   NEWS_CENTRAL_BANK, NEWS_SOURCE_BLOOMBERG, "EUR", "EURUSD");
         
-        AddNewsItem("Financial Times - Brexit Update", 
+        AddNews("Financial Times - Brexit Update", 
                    "Latest developments in Brexit negotiations affect market sentiment", 
-                   NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, SENTIMENT_NEGATIVE, NEWS_IMPACT_HIGH, 
-                   "GBP", current_time - 5400, -0.2, 0.88, 0.9, true, true, true);
+                   NEWS_POLITICAL, NEWS_SOURCE_FINANCIAL_TIMES, "GBP", "GBPUSD");
     }
     
     // Pobieranie z mediów społecznościowych
@@ -1481,15 +1474,13 @@ public:
                     ENUM_SENTIMENT_LEVEL sentiment_level = ConvertSentimentToLevel(sentiment);
                     
                     if(StringFind(title, "Bitcoin") >= 0 || StringFind(title, "BTC") >= 0) {
-                        AddNewsItem("Reddit - " + title, "Bitcoin reaches new highs as institutional adoption increases", 
-                                NEWS_CRYPTO, SOURCE_REDDIT, sentiment_level, NEWS_IMPACT_MEDIUM, 
-                                "BTC", current_time - 900, sentiment, 0.75, 0.6, false, true, false);
+                        AddNews("Reddit - " + title, "Bitcoin reaches new highs as institutional adoption increases", 
+                                NEWS_CRYPTO, NEWS_SOURCE_CUSTOM, "BTC", "BTCUSD");
                         posts_added++;
                     }
                     else if(StringFind(title, "GME") >= 0 || StringFind(title, "GameStop") >= 0) {
-                        AddNewsItem("Reddit - " + title, "Retail investors show strong interest in meme stocks", 
-                                NEWS_SOCIAL_MEDIA, SOURCE_REDDIT, sentiment_level, NEWS_IMPACT_LOW, 
-                                "USD", current_time - 1800, sentiment, 0.70, 0.4, false, true, false);
+                        AddNews("Reddit - " + title, "Retail investors show strong interest in meme stocks", 
+                                NEWS_SOCIAL_MEDIA, NEWS_SOURCE_CUSTOM, "USD", "USDCAD");
                         posts_added++;
                     }
                 }
@@ -1505,15 +1496,13 @@ public:
     void SimulateSocialMediaData() {
         datetime current_time = TimeCurrent();
         
-        AddNewsItem("Twitter - Crypto Market Sentiment", 
+        AddNews("Twitter - Crypto Market Sentiment", 
                    "Bitcoin reaches new highs as institutional adoption increases", 
-                   NEWS_CRYPTO, SOURCE_TWITTER, SENTIMENT_POSITIVE, NEWS_IMPACT_MEDIUM, 
-                   "BTC", current_time - 900, 0.4, 0.75, 0.6, false, true, false);
+                   NEWS_CRYPTO, NEWS_SOURCE_CUSTOM, "BTC", "BTCUSD");
         
-        AddNewsItem("Reddit - Retail Investor Sentiment", 
+        AddNews("Reddit - Retail Investor Sentiment", 
                    "Retail investors show strong interest in meme stocks", 
-                   NEWS_SOCIAL_MEDIA, SOURCE_REDDIT, SENTIMENT_POSITIVE, NEWS_IMPACT_LOW, 
-                   "USD", current_time - 1800, 0.2, 0.70, 0.4, false, true, false);
+                   NEWS_SOCIAL_MEDIA, NEWS_SOURCE_CUSTOM, "USD", "USDCAD");
     }
     
     // Pobieranie z agencji prasowej
@@ -1570,15 +1559,13 @@ public:
                     ENUM_SENTIMENT_LEVEL sentiment_level = ConvertSentimentToLevel(sentiment);
                     
                     if(StringFind(title, "Economic") >= 0 || StringFind(title, "GDP") >= 0) {
-                        AddNewsItem("AP - " + title, "Latest economic indicators show mixed signals for market direction", 
-                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
-                                "USD", current_time - 2700, sentiment, 0.92, 0.7, true, true, false);
+                        AddNews("AP - " + title, "Latest economic indicators show mixed signals for market direction", 
+                                NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
                         news_added++;
                     }
                     else if(StringFind(title, "Oil") >= 0 || StringFind(title, "Crude") >= 0) {
-                        AddNewsItem("Reuters - " + title, "Oil prices fluctuate amid supply concerns and demand forecasts", 
-                                NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, sentiment_level, NEWS_IMPACT_MEDIUM, 
-                                "OIL", current_time - 3600, sentiment, 0.89, 0.6, true, true, false);
+                        AddNews("Reuters - " + title, "Oil prices fluctuate amid supply concerns and demand forecasts", 
+                                NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, "OIL", "USOUSD");
                         news_added++;
                     }
                 }
@@ -1594,15 +1581,13 @@ public:
     void SimulateNewsAgencyData() {
         datetime current_time = TimeCurrent();
         
-        AddNewsItem("AP - Economic Data Release", 
+        AddNews("AP - Economic Data Release", 
                    "Latest economic indicators show mixed signals for market direction", 
-                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, SENTIMENT_NEUTRAL, NEWS_IMPACT_MEDIUM, 
-                   "USD", current_time - 2700, 0.0, 0.92, 0.7, true, true, false);
+                   NEWS_ECONOMIC, NEWS_SOURCE_REUTERS, "USD", "EURUSD");
         
-        AddNewsItem("Reuters - Oil Price Movement", 
+        AddNews("Reuters - Oil Price Movement", 
                    "Oil prices fluctuate amid supply concerns and demand forecasts", 
-                   NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, SENTIMENT_NEGATIVE, NEWS_IMPACT_MEDIUM, 
-                   "OIL", current_time - 3600, -0.1, 0.89, 0.6, true, true, false);
+                   NEWS_COMMODITIES, NEWS_SOURCE_REUTERS, "OIL", "USOUSD");
     }
     
     // Aktualizacja wszystkich źródeł danych
@@ -1696,16 +1681,26 @@ bool HasImportantNews() {
 }
 
 NewsItem GetLatestNews() {
-    return g_news_processor != NULL ? g_news_processor.GetLatestNews() : NewsItem{};
+    if(g_news_processor != NULL) {
+        return g_news_processor.GetLatestNews();
+    } else {
+        NewsItem empty_news;
+        return empty_news;
+    }
 }
 
 SentimentAnalysis GetCurrentSentiment() {
-    return g_news_processor != NULL ? g_news_processor.GetCurrentSentiment() : SentimentAnalysis{};
+    if(g_news_processor != NULL) {
+        return g_news_processor.GetCurrentSentiment();
+    } else {
+        SentimentAnalysis empty_sentiment;
+        return empty_sentiment;
+    }
 }
 
 void GetTradingImpacts(TradingImpact &out_impacts[]) {
     if(g_news_processor != NULL) {
-        out_impacts = g_news_processor.GetTradingImpacts();
+        g_news_processor.GetTradingImpacts(out_impacts);
     } else {
         ArrayResize(out_impacts, 0);
     }

@@ -65,6 +65,9 @@
 // === GLOBALNA KONFIGURACJA ===
 SystemConfig g_config;
 
+// === GLOBALNE INSTANCJE SYSTEMÓW ===
+CLoggingSystem g_logging_system;
+
 // GUI Constants
 #define GUI_WIDTH 400
 #define GUI_HEIGHT 600
@@ -258,36 +261,36 @@ int OnInit() {
     
     // Validate system configuration
     if(!ValidateSystemConfig(g_config)) {
-        LogError(LOG_COMPONENT_SYSTEM, "Błąd konfiguracji systemu", "Nie można zwalidować konfiguracji");
+        g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "Błąd konfiguracji systemu", "Nie można zwalidować konfiguracji");
         return INIT_FAILED;
     }
     
     // Initialize logging system
     if(g_config.enable_logging_system) {
-        LogInfo(LOG_COMPONENT_SYSTEM, "Inicjalizacja systemu logowania", "Logging system włączony");
+        g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Inicjalizacja systemu logowania", "Logging system włączony");
     }
     
     // Initialize Data components
     if(!InitializeDataComponents()) {
-        LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji komponentów danych", "Nie można zainicjalizować komponentów danych");
+        g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji komponentów danych", "Nie można zainicjalizować komponentów danych");
         return INIT_FAILED;
     }
     
     // Initialize all spirits
     if(!InitializeAllSpirits()) {
-        LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji duchów", "Nie można zainicjalizować wszystkich duchów");
+        g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji duchów", "Nie można zainicjalizować wszystkich duchów");
         return INIT_FAILED;
     }
     
     // Initialize Master Consciousness
     if(!InitializeMasterConsciousness()) {
-        LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji Master Consciousness", "Nie można zainicjalizować Master Consciousness");
+        g_logging_system.LogError(LOG_COMPONENT_SYSTEM, "Błąd inicjalizacji Master Consciousness", "Nie można zainicjalizować Master Consciousness");
         return INIT_FAILED;
     }
     
     g_system_initialized = true;
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "System Böhmego zainicjalizowany", 
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "System Böhmego zainicjalizowany", 
             "Wersja: 2.0, Duchy: 7/7, AI: Zaawansowane");
     Print("✅ System Böhmego v2.0 z AI zainicjalizowany");
     Print("📊 Konfiguracja:");
@@ -300,7 +303,7 @@ int OnInit() {
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason) {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Deinicjalizacja systemu", "Powód: " + IntegerToString(reason));
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Deinicjalizacja systemu", "Powód: " + IntegerToString(reason));
     
     // Cleanup GUI
     CleanupGUI();
@@ -357,7 +360,7 @@ void OnTick() {
         
         // Log analysis counter every 100 analyses
         if(g_analysis_counter % 100 == 0) {
-            LogInfo(LOG_COMPONENT_SYSTEM, "Analiza rynku", 
+            g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Analiza rynku", 
                     "Liczba analiz: " + IntegerToString(g_analysis_counter));
             
             // Display complete system report every 500 analyses
@@ -632,7 +635,7 @@ bool InitializeExecutionComponents() {
 //| Initialize all spirits                                           |
 //+------------------------------------------------------------------+
 bool InitializeAllSpirits() {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Inicjalizacja duchów", "Rozpoczęcie inicjalizacji wszystkich duchów");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Inicjalizacja duchów", "Rozpoczęcie inicjalizacji wszystkich duchów");
     
     // Initialize Light Spirit (Signal Clarity & Pattern Recognition)
     if(g_config.enable_light_spirit) {
@@ -641,7 +644,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_LIGHT, "Błąd inicjalizacji Light Spirit", "Nie można zainicjalizować Light Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_LIGHT, "Light Spirit zainicjalizowany", "Rozpoznawanie wzorców i sygnałów");
+        g_logging_system.LogInfo(LOG_COMPONENT_LIGHT, "Light Spirit zainicjalizowany", "Rozpoznawanie wzorców i sygnałów");
     }
     
     // Initialize Fire Spirit (Volatility & Energy Analysis)
@@ -651,7 +654,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_FIRE, "Błąd inicjalizacji Fire Spirit", "Nie można zainicjalizować Fire Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_FIRE, "Fire Spirit zainicjalizowany", "Analiza zmienności i energii z AI");
+        g_logging_system.LogInfo(LOG_COMPONENT_FIRE, "Fire Spirit zainicjalizowany", "Analiza zmienności i energii z AI");
     }
     
     // Initialize Bitterness Spirit (Momentum & Breakthroughs)
@@ -661,7 +664,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_BITTERNESS, "Błąd inicjalizacji Bitterness Spirit", "Nie można zainicjalizować Bitterness Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_BITTERNESS, "Bitterness Spirit zainicjalizowany", "Analiza momentum i przełomów");
+        g_logging_system.LogInfo(LOG_COMPONENT_BITTERNESS, "Bitterness Spirit zainicjalizowany", "Analiza momentum i przełomów");
     }
     
     // Initialize Body Spirit (Execution & Risk Management)
@@ -671,7 +674,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_BODY, "Błąd inicjalizacji Body Spirit", "Nie można zainicjalizować Body Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_BODY, "Body Spirit zainicjalizowany", "Zarządzanie wykonaniem i ryzykiem");
+        g_logging_system.LogInfo(LOG_COMPONENT_BODY, "Body Spirit zainicjalizowany", "Zarządzanie wykonaniem i ryzykiem");
     }
     
     // Initialize Herbe Spirit (Fundamental Tensions)
@@ -681,7 +684,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_HERBE, "Błąd inicjalizacji Herbe Spirit", "Nie można zainicjalizować Herbe Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_HERBE, "Herbe Spirit zainicjalizowany", "Analiza napięć fundamentalnych z AI");
+        g_logging_system.LogInfo(LOG_COMPONENT_HERBE, "Herbe Spirit zainicjalizowany", "Analiza napięć fundamentalnych z AI");
     }
     
     // Initialize Sweetness Spirit (Sentiment Analysis)
@@ -691,7 +694,7 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_SWEETNESS, "Błąd inicjalizacji Sweetness Spirit", "Nie można zainicjalizować Sweetness Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_SWEETNESS, "Sweetness Spirit zainicjalizowany", "Analiza sentymentu rynkowego z AI");
+        g_logging_system.LogInfo(LOG_COMPONENT_SWEETNESS, "Sweetness Spirit zainicjalizowany", "Analiza sentymentu rynkowego z AI");
     }
     
     // Initialize Sound Spirit (Harmony & Cycles)
@@ -701,10 +704,10 @@ bool InitializeAllSpirits() {
             LogError(LOG_COMPONENT_SOUND, "Błąd inicjalizacji Sound Spirit", "Nie można zainicjalizować Sound Spirit");
             return false;
         }
-        LogInfo(LOG_COMPONENT_SOUND, "Sound Spirit zainicjalizowany", "Analiza harmonii i cykli z AI");
+        g_logging_system.LogInfo(LOG_COMPONENT_SOUND, "Sound Spirit zainicjalizowany", "Analiza harmonii i cykli z AI");
     }
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy zainicjalizowane", "7/7 duchów gotowych");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy zainicjalizowane", "7/7 duchów gotowych");
     return true;
 }
 
@@ -762,7 +765,7 @@ void UpdateDataComponents() {
 //| Initialize Master Consciousness                                  |
 //+------------------------------------------------------------------+
 bool InitializeMasterConsciousness() {
-    LogInfo(LOG_COMPONENT_MASTER, "Inicjalizacja Master Consciousness", "Rozpoczęcie inicjalizacji centralnego kontrolera");
+    g_logging_system.LogInfo(LOG_COMPONENT_MASTER, "Inicjalizacja Master Consciousness", "Rozpoczęcie inicjalizacji centralnego kontrolera");
     
     g_master_consciousness = new CMasterConsciousness();
     if(g_master_consciousness == NULL) {
@@ -785,7 +788,7 @@ bool InitializeMasterConsciousness() {
         return false;
     }
     
-    LogInfo(LOG_COMPONENT_MASTER, "Master Consciousness zainicjalizowany", "Centralny kontroler gotowy");
+    g_logging_system.LogInfo(LOG_COMPONENT_MASTER, "Master Consciousness zainicjalizowany", "Centralny kontroler gotowy");
     return true;
 }
 
@@ -839,7 +842,7 @@ void AnalyzeMarketWithAllSpirits() {
     SConsensusDecision decision = g_master_consciousness.GetConsensusDecision();
     
     // Log decision details
-    LogInfo(LOG_COMPONENT_MASTER, "Konsensus duchów", 
+    g_logging_system.LogInfo(LOG_COMPONENT_MASTER, "Konsensus duchów", 
             "Decyzja: " + IntegerToString(decision.action) + 
             ", Pewność: " + DoubleToString(decision.confidence, 2) + 
             ", Harmonia: " + DoubleToString(decision.harmony, 2));
@@ -864,13 +867,13 @@ void AnalyzeMarketWithAllSpirits() {
 //| Execute advanced trade                                           |
 //+------------------------------------------------------------------+
 void ExecuteAdvancedTrade(SConsensusDecision& decision) {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Wykonanie transakcji", 
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Wykonanie transakcji", 
             "Akcja: " + IntegerToString(decision.action) + 
             ", Cena: " + DoubleToString(decision.optimal_price, 5));
     
     switch(decision.action) {
         case ACTION_BUY:
-            LogInfo(LOG_COMPONENT_SYSTEM, "📈 Wykonanie BUY", 
+            g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "📈 Wykonanie BUY", 
                     "Cena: " + DoubleToString(decision.optimal_price, 5) + 
                     ", Wolumen: " + DoubleToString(decision.volume, 2));
             // Add your order execution code here
@@ -878,7 +881,7 @@ void ExecuteAdvancedTrade(SConsensusDecision& decision) {
             break;
             
         case ACTION_SELL:
-            LogInfo(LOG_COMPONENT_SYSTEM, "📉 Wykonanie SELL", 
+            g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "📉 Wykonanie SELL", 
                     "Cena: " + DoubleToString(decision.optimal_price, 5) + 
                     ", Wolumen: " + DoubleToString(decision.volume, 2));
             // Add your order execution code here
@@ -890,7 +893,7 @@ void ExecuteAdvancedTrade(SConsensusDecision& decision) {
             break;
             
         case ACTION_CLOSE:
-            LogInfo(LOG_COMPONENT_SYSTEM, "🔒 Zamykanie pozycji", "Zamykanie wszystkich pozycji");
+            g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "🔒 Zamykanie pozycji", "Zamykanie wszystkich pozycji");
             // Add your position closing code here
             break;
             
@@ -1025,7 +1028,7 @@ void LogSpiritStatus() {
     status += "   Backtest Framework: ⚠️ Niedostępne\n";
     #endif
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Status duchów", status);
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Status duchów", status);
 }
 
 //+------------------------------------------------------------------+
@@ -1222,7 +1225,7 @@ void TestUtilsComponents() {
     
     // Test LoggingSystem
     Print("   Testowanie LoggingSystem...");
-    LogInfo(LOG_COMPONENT_SYSTEM, "Test Utils", "Testowanie komponentów Utils");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Test Utils", "Testowanie komponentów Utils");
     Print("   ✅ LoggingSystem - OK");
     
     Print("✅ Wszystkie komponenty Utils przetestowane");
@@ -1429,7 +1432,7 @@ void TestAllComponents() {
 //| Cleanup Data Components                                          |
 //+------------------------------------------------------------------+
 void CleanupDataComponents() {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Cleanup komponentów danych", "Zwalnianie zasobów komponentów danych");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Cleanup komponentów danych", "Zwalnianie zasobów komponentów danych");
     
     // Release Data Manager
     ReleaseGlobalDataManager();
@@ -1450,7 +1453,7 @@ void CleanupDataComponents() {
 //| Cleanup Execution Components                                     |
 //+------------------------------------------------------------------+
 void CleanupExecutionComponents() {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Cleanup komponentów Execution", "Zwalnianie zasobów komponentów Execution");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Cleanup komponentów Execution", "Zwalnianie zasobów komponentów Execution");
     
     // Release Execution Algorithms
     ReleaseGlobalExecutionAlgorithms();
@@ -1471,7 +1474,7 @@ void CleanupExecutionComponents() {
 //| Cleanup all spirits                                              |
 //+------------------------------------------------------------------+
 void CleanupAllSpirits() {
-    LogInfo(LOG_COMPONENT_SYSTEM, "Czyszczenie duchów", "Rozpoczęcie czyszczenia wszystkich duchów");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Czyszczenie duchów", "Rozpoczęcie czyszczenia wszystkich duchów");
     
     if(g_light_spirit != NULL) {
         delete g_light_spirit;
@@ -1508,7 +1511,7 @@ void CleanupAllSpirits() {
         g_sound_spirit = NULL;
     }
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy wyczyszczone", "Czyszczenie zakończone");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy wyczyszczone", "Czyszczenie zakończone");
 }
 
 //+------------------------------------------------------------------+
@@ -1967,7 +1970,7 @@ void StartSpirit(string spirit_name) {
     // Initialize spirit if needed
     InitializeSpirit(spirit_name);
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Spirit uruchomiony", spirit_name + " Spirit został uruchomiony");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Spirit uruchomiony", spirit_name + " Spirit został uruchomiony");
 }
 
 //+------------------------------------------------------------------+
@@ -1985,7 +1988,7 @@ void StopSpirit(string spirit_name) {
     else if(spirit_name == "Sweetness") g_config.enable_sweetness_spirit = false;
     else if(spirit_name == "Sound") g_config.enable_sound_spirit = false;
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Spirit zatrzymany", spirit_name + " Spirit został zatrzymany");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Spirit zatrzymany", spirit_name + " Spirit został zatrzymany");
 }
 
 //+------------------------------------------------------------------+
@@ -2006,7 +2009,7 @@ void TestSpirit(string spirit_name) {
     // Update GUI
     UpdateTestResults();
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Test spirit zakończony", 
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Test spirit zakończony", 
             spirit_name + " Spirit test: " + (test_result ? "SUKCES" : "BŁĄD"));
 }
 
@@ -2038,7 +2041,7 @@ void StartAllSpirits() {
         StartSpirit(spirit_names[i]);
     }
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy uruchomione", "7/7 duchów aktywnych");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy uruchomione", "7/7 duchów aktywnych");
 }
 
 //+------------------------------------------------------------------+
@@ -2053,7 +2056,7 @@ void StopAllSpirits() {
         StopSpirit(spirit_names[i]);
     }
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy zatrzymane", "0/7 duchów aktywnych");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Wszystkie duchy zatrzymane", "0/7 duchów aktywnych");
 }
 
 //+------------------------------------------------------------------+
@@ -2068,7 +2071,7 @@ void TestAllSpirits() {
         TestSpirit(spirit_names[i]);
     }
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Testy wszystkich duchów zakończone", "7/7 duchów przetestowanych");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Testy wszystkich duchów zakończone", "7/7 duchów przetestowanych");
 }
 
 //+------------------------------------------------------------------+
@@ -2083,7 +2086,7 @@ void ShowSystemReport() {
     // Show report in GUI
     ShowReportDialog(report);
     
-    LogInfo(LOG_COMPONENT_SYSTEM, "Raport systemu wygenerowany", "Pełny raport dostępny");
+    g_logging_system.LogInfo(LOG_COMPONENT_SYSTEM, "Raport systemu wygenerowany", "Pełny raport dostępny");
 }
 
 //+------------------------------------------------------------------+

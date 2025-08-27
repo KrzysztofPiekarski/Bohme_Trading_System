@@ -1459,11 +1459,14 @@ bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double 
     
     if(rows != n || cols != n) return false;
     
-    // Kopia macierzy i wektora
-    double A[][];
-    ArrayResize(A, rows);
-    ArrayResize(A, rows, cols);
-    ArrayCopy(A, coeff_matrix);
+    // Kopia macierzy i wektora - używamy 1D tablicy do reprezentacji 2D
+    double A[];
+    ArrayResize(A, rows * cols);
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+            A[i * cols + j] = coeff_matrix[i][j];
+        }
+    }
     
     double b[];
     ArrayResize(b, n);
@@ -1474,7 +1477,7 @@ bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double 
         // Znalezienie elementu głównego
         int max_row = k;
         for(int i = k + 1; i < n; i++) {
-            if(MathAbs(A[i][k]) > MathAbs(A[max_row][k])) {
+            if(MathAbs(A[i * cols + k]) > MathAbs(A[max_row * cols + k])) {
                 max_row = i;
             }
         }
@@ -1482,9 +1485,9 @@ bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double 
         // Zamiana wierszy
         if(max_row != k) {
             for(int j = k; j < n; j++) {
-                double temp = A[k][j];
-                A[k][j] = A[max_row][j];
-                A[max_row][j] = temp;
+                double temp = A[k * cols + j];
+                A[k * cols + j] = A[max_row * cols + j];
+                A[max_row * cols + j] = temp;
             }
             double temp = b[k];
             b[k] = b[max_row];
@@ -1493,9 +1496,9 @@ bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double 
         
         // Eliminacja
         for(int i = k + 1; i < n; i++) {
-            double factor = A[i][k] / A[k][k];
+            double factor = A[i * cols + k] / A[k * cols + k];
             for(int j = k; j < n; j++) {
-                A[i][j] -= factor * A[k][j];
+                A[i * cols + j] -= factor * A[k * cols + j];
             }
             b[i] -= factor * b[k];
         }
@@ -1506,9 +1509,9 @@ bool SolveLinearSystem(double &coeff_matrix[][], double &input_vector[], double 
     for(int i = n - 1; i >= 0; i--) {
         double sum = 0.0;
         for(int j = i + 1; j < n; j++) {
-            sum += A[i][j] * solution[j];
+            sum += A[i * cols + j] * solution[j];
         }
-        solution[i] = (b[i] - sum) / A[i][i];
+        solution[i] = (b[i] - sum) / A[i * cols + i];
     }
     
     return true;
@@ -1523,11 +1526,14 @@ double MatrixDeterminant(double &input_matrix[][]) {
     
     int n = rows;
     
-    // Kopia macierzy
-    double A[][];
-    ArrayResize(A, n);
-    ArrayResize(A, n, n);
-    ArrayCopy(A, input_matrix);
+    // Kopia macierzy - używamy 1D tablicy do reprezentacji 2D
+    double A[];
+    ArrayResize(A, n * n);
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            A[i * n + j] = input_matrix[i][j];
+        }
+    }
     
     double det = 1.0;
     
@@ -1535,7 +1541,7 @@ double MatrixDeterminant(double &input_matrix[][]) {
         // Znalezienie elementu głównego
         int max_row = k;
         for(int i = k + 1; i < n; i++) {
-            if(MathAbs(A[i][k]) > MathAbs(A[max_row][k])) {
+            if(MathAbs(A[i * n + k]) > MathAbs(A[max_row * n + k])) {
                 max_row = i;
             }
         }
@@ -1543,25 +1549,25 @@ double MatrixDeterminant(double &input_matrix[][]) {
         // Zamiana wierszy
         if(max_row != k) {
             for(int j = k; j < n; j++) {
-                double temp = A[k][j];
-                A[k][j] = A[max_row][j];
-                A[max_row][j] = temp;
+                double temp = A[k * n + j];
+                A[k * n + j] = A[max_row * n + j];
+                A[max_row * n + j] = temp;
             }
             det = -det;
         }
         
         // Eliminacja
         for(int i = k + 1; i < n; i++) {
-            double factor = A[i][k] / A[k][k];
+            double factor = A[i * n + k] / A[k * n + k];
             for(int j = k; j < n; j++) {
-                A[i][j] -= factor * A[k][j];
+                A[i * n + j] -= factor * A[k * n + j];
             }
         }
     }
     
     // Obliczenie wyznacznika
     for(int i = 0; i < n; i++) {
-        det *= A[i][i];
+        det *= A[i * n + i];
     }
     
     return det;

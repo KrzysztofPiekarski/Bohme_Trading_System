@@ -2,6 +2,7 @@
 // Kompletna implementacja Ducha Dźwięku - Harmony & Cycle Analysis
 #include <Math\Alglib\ap.mqh>
 #include "../AI/AIEnums.mqh"
+#include "../Utils/LoggingSystem.mqh"
 
 // Używamy ENUM_HARMONY_STATE z AIEnums.mqh
 
@@ -123,6 +124,7 @@ private:
     double m_harmonic_series[100];
     double m_phase_alignment[20];
     double m_frequency_spectrum[512];
+    double m_cycle_periods[100];        // Cycle periods buffer
     
     // Fibonacci time ratios
     double m_fibonacci_ratios[13];
@@ -131,6 +133,11 @@ private:
     datetime m_mercury_cycle[88];   // 88 day cycle
     datetime m_venus_cycle[225];    // 225 day cycle  
     datetime m_mars_cycle[687];     // 687 day cycle
+    
+    // LSTM Neural Network weights (using 1D arrays for MQL5 compatibility)
+    double m_lstm_weights_input[6400];      // Input weights (100*64)
+    double m_lstm_weights_hidden[4096];     // Hidden weights (64*64)
+    double m_lstm_bias[64];                 // Bias weights
     
     // Helper functions
     void PerformSpectralAnalysis(double &data[], int size);
@@ -629,7 +636,7 @@ bool SoundSpiritAI::Initialize() {
     // Initialize neural networks
     for(int i = 0; i < 100; i++) {
         for(int j = 0; j < 64; j++) {
-            m_lstm_weights_input[i][j] = (MathRand()/32767.0 - 0.5) * 0.1;
+            m_lstm_weights_input[i * 64 + j] = (MathRand()/32767.0 - 0.5) * 0.1;
         }
     }
     
@@ -676,6 +683,15 @@ void SoundSpiritAI::UpdateCycleData() {
     
     // Update planetary cycles
     UpdatePlanetaryCycles();
+}
+
+// Implementacja GetCyclicMomentum
+double SoundSpiritAI::GetCyclicMomentum() {
+    double momentum = 0.0;
+    for(int i = 0; i < m_cycle_count; i++) {
+        momentum += m_detected_cycles[i].strength * m_detected_cycles[i].amplitude;
+    }
+    return m_cycle_count > 0 ? momentum / m_cycle_count : 0.0;
 }
 
 // Destruktor

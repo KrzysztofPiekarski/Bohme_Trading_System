@@ -7,6 +7,10 @@
 // Zaawansowane funkcje do obsługi czasu dla Systemu Böhmego
 // Konwersje, obliczenia, formatowanie, analiza czasowa
 
+#include "StringUtils.mqh"
+#include <Trade\Trade.mqh>
+#include <Object.mqh>
+
 // === ENUMERACJE ===
 
 // Jednostki czasu
@@ -94,6 +98,7 @@ struct STimePeriod {
     ENUM_PERIOD_TYPE period_type; // Typ okresu
     string description;    // Opis okresu
     bool is_valid;         // Czy okres jest prawidłowy
+    datetime analysis_time; // Czas przeprowadzenia analizy
 };
 
 // Struktura analizy czasowej
@@ -123,13 +128,68 @@ struct SCalendar {
     datetime weekends[];   // Weekendy
     string month_name;     // Nazwa miesiąca
     string month_name_short; // Krótka nazwa miesiąca
+    datetime analysis_time; // Czas przeprowadzenia analizy
 };
 
 // === PODSTAWOWE FUNKCJE CZASU ===
 
 // Funkcja do pobierania aktualnego czasu
 datetime GetCurrentTime() {
-    return TimeCurrent();
+    return TimeLocal();
+}
+
+// Funkcja do pobierania roku z timestamp
+int TimeYear(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.year;
+}
+
+// Funkcja do pobierania miesiąca z timestamp  
+int TimeMonth(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.mon;
+}
+
+// Funkcja do pobierania dnia z timestamp
+int TimeDay(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.day;
+}
+
+// Funkcja do pobierania godziny z timestamp
+int TimeHour(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.hour;
+}
+
+// Funkcja do pobierania minuty z timestamp
+int TimeMinute(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.min;
+}
+
+// Funkcja do pobierania sekundy z timestamp
+int TimeSecond(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.sec;
+}
+
+// Funkcja do pobierania dnia tygodnia z timestamp
+int TimeDayOfWeek(datetime dt) {
+    MqlDateTime tm;
+    TimeToStruct(dt, tm);
+    return tm.day_of_week;
+}
+
+// Funkcja do pobierania aktualnego czasu serwera
+datetime GetTimeCurrent() {
+    return TimeLocal();
 }
 
 // Funkcja do pobierania czasu lokalnego
@@ -408,7 +468,7 @@ datetime SubtractTime(datetime timestamp, double amount, ENUM_TIME_UNIT unit) {
 int CalculateAge(datetime birth_date) {
     if(!IsValidTimestamp(birth_date)) return -1;
     
-    datetime current_time = TimeCurrent();
+    datetime current_time = GetTimeCurrent();
     if(birth_date > current_time) return -1;
     
     MqlDateTime birth_dt, current_dt;
@@ -428,12 +488,12 @@ int CalculateAge(datetime birth_date) {
 
 // Funkcja do sprawdzania czy data jest w przeszłości
 bool IsPast(datetime timestamp) {
-    return IsValidTimestamp(timestamp) && timestamp < TimeCurrent();
+    return IsValidTimestamp(timestamp) && timestamp < GetTimeCurrent();
 }
 
 // Funkcja do sprawdzania czy data jest w przyszłości
 bool IsFuture(datetime timestamp) {
-    return IsValidTimestamp(timestamp) && timestamp > TimeCurrent();
+    return IsValidTimestamp(timestamp) && timestamp > GetTimeCurrent();
 }
 
 // Funkcja do sprawdzania czy data jest dzisiaj
@@ -450,9 +510,9 @@ bool IsToday(datetime timestamp) {
 bool IsThisWeek(datetime timestamp) {
     if(!IsValidTimestamp(timestamp)) return false;
     
-    int current_week = GetWeekOfYear(TimeCurrent());
+    int current_week = GetWeekOfYear(GetTimeCurrent());
     int timestamp_week = GetWeekOfYear(timestamp);
-    int current_year = TimeYear(TimeCurrent());
+    int current_year = TimeYear(GetTimeCurrent());
     int timestamp_year = TimeYear(timestamp);
     
     return current_week == timestamp_week && current_year == timestamp_year;
@@ -463,7 +523,7 @@ bool IsThisMonth(datetime timestamp) {
     if(!IsValidTimestamp(timestamp)) return false;
     
     MqlDateTime current_dt, timestamp_dt;
-    TimeToStruct(TimeCurrent(), current_dt);
+    TimeToStruct(GetTimeCurrent(), current_dt);
     TimeToStruct(timestamp, timestamp_dt);
     
     return current_dt.mon == timestamp_dt.mon && current_dt.year == timestamp_dt.year;
@@ -473,7 +533,7 @@ bool IsThisMonth(datetime timestamp) {
 bool IsThisYear(datetime timestamp) {
     if(!IsValidTimestamp(timestamp)) return false;
     
-    return TimeYear(TimeCurrent()) == TimeYear(timestamp);
+    return TimeYear(GetTimeCurrent()) == TimeYear(timestamp);
 }
 
 // Funkcja do pobierania początku dnia
@@ -558,7 +618,7 @@ datetime GetEndOfYear(datetime timestamp) {
 // Funkcja do analizy czasu i zwrócenia szczegółowych informacji
 STimeInfo AnalyzeTime(datetime timestamp) {
     STimeInfo info;
-    info.analysis_time = TimeCurrent();
+    info.analysis_time = GetTimeCurrent();
     
     if(!IsValidTimestamp(timestamp)) {
         info.timestamp = 0;
@@ -606,7 +666,7 @@ STimeInfo AnalyzeTime(datetime timestamp) {
 string GetRelativeTimeString(datetime timestamp) {
     if(!IsValidTimestamp(timestamp)) return "Nieprawidłowy czas";
     
-    datetime current_time = TimeCurrent();
+    datetime current_time = GetTimeCurrent();
     int seconds_diff = GetTimeDifference(timestamp, current_time);
     
     if(seconds_diff < 0) {
@@ -658,7 +718,7 @@ string GetRelativeTimeString(datetime timestamp) {
 string CalculateDetailedAge(datetime birth_date) {
     if(!IsValidTimestamp(birth_date)) return "Nieprawidłowa data urodzenia";
     
-    datetime current_time = TimeCurrent();
+    datetime current_time = GetTimeCurrent();
     if(birth_date > current_time) return "Data urodzenia w przyszłości";
     
     MqlDateTime birth_dt, current_dt;
@@ -999,7 +1059,7 @@ STimePeriod CreateTimePeriod(datetime start_time, datetime end_time, ENUM_PERIOD
     period.start_time = start_time;
     period.end_time = end_time;
     period.period_type = period_type;
-    period.analysis_time = TimeCurrent();
+    period.analysis_time = GetTimeCurrent();
     
     if(IsValidTimestamp(start_time) && IsValidTimestamp(end_time)) {
         period.duration_seconds = GetTimeDifference(start_time, end_time);
@@ -1138,7 +1198,7 @@ SCalendar GenerateCalendar(int year, int month) {
     calendar.year = year;
     calendar.month = month;
     calendar.days_in_month = GetDaysInMonth(year, month);
-    calendar.analysis_time = TimeCurrent();
+    calendar.analysis_time = GetTimeCurrent();
     
     // Nazwy miesięcy
     string month_names[] = {"Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
@@ -1194,7 +1254,7 @@ SCalendar GenerateYearCalendar(int year) {
     year_calendar.days_in_month = IsLeapYear(year) ? 366 : 365;
     year_calendar.month_name = "Cały rok " + IntegerToString(year);
     year_calendar.month_name_short = IntegerToString(year);
-    year_calendar.analysis_time = TimeCurrent();
+    year_calendar.analysis_time = GetTimeCurrent();
     
     // Generowanie dni dla całego roku
     ArrayResize(year_calendar.business_days, 0);
@@ -1424,7 +1484,7 @@ bool IsPeriodSingleYear(STimePeriod &period) {
 STimeAnalysis AnalyzeTimeTrend(datetime &timestamps[], int data_points = 0) {
     STimeAnalysis analysis;
     analysis.analysis_type = TIME_ANALYSIS_TREND;
-    analysis.analysis_time = TimeCurrent();
+    analysis.analysis_time = GetTimeCurrent();
     
     if(data_points == 0) data_points = ArraySize(timestamps);
     
@@ -1475,7 +1535,7 @@ STimeAnalysis AnalyzeTimeTrend(datetime &timestamps[], int data_points = 0) {
 STimeAnalysis AnalyzeSeasonality(datetime &timestamps[], int data_points = 0) {
     STimeAnalysis analysis;
     analysis.analysis_type = TIME_ANALYSIS_SEASONAL;
-    analysis.analysis_time = TimeCurrent();
+    analysis.analysis_time = GetTimeCurrent();
     
     if(data_points == 0) data_points = ArraySize(timestamps);
     
@@ -1532,7 +1592,7 @@ STimeAnalysis AnalyzeSeasonality(datetime &timestamps[], int data_points = 0) {
 STimeAnalysis AnalyzeCyclicity(datetime &timestamps[], int data_points = 0) {
     STimeAnalysis analysis;
     analysis.analysis_type = TIME_ANALYSIS_CYCLIC;
-    analysis.analysis_time = TimeCurrent();
+    analysis.analysis_time = GetTimeCurrent();
     
     if(data_points == 0) data_points = ArraySize(timestamps);
     
@@ -1594,7 +1654,7 @@ STimeAnalysis AnalyzeCyclicity(datetime &timestamps[], int data_points = 0) {
 STimeAnalysis AnalyzeTimePatterns(datetime &timestamps[], int data_points = 0) {
     STimeAnalysis analysis;
     analysis.analysis_type = TIME_ANALYSIS_PATTERN;
-    analysis.analysis_time = TimeCurrent();
+    analysis.analysis_time = GetTimeCurrent();
     
     if(data_points == 0) data_points = ArraySize(timestamps);
     
@@ -1663,7 +1723,7 @@ STimeAnalysis AnalyzeTimePatterns(datetime &timestamps[], int data_points = 0) {
 STimeAnalysis ForecastTime(datetime &timestamps[], int forecast_periods = 5, int data_points = 0) {
     STimeAnalysis analysis;
     analysis.analysis_type = TIME_ANALYSIS_FORECAST;
-    analysis.analysis_time = TimeCurrent();
+    analysis.analysis_time = GetTimeCurrent();
     
     if(data_points == 0) data_points = ArraySize(timestamps);
     
@@ -2052,7 +2112,7 @@ string BenchmarkTimeUtils() {
     
     // Przygotowanie danych testowych
     datetime test_timestamps[1000];
-    datetime start_time = TimeCurrent();
+    datetime start_time = GetTimeCurrent();
     
     for(int i = 0; i < 1000; i++) {
         test_timestamps[i] = start_time + i * 60; // Co minutę
@@ -2061,39 +2121,39 @@ string BenchmarkTimeUtils() {
     benchmark_report += "Rozmiar danych testowych: " + IntegerToString(ArraySize(test_timestamps)) + " timestampów\n\n";
     
     // Benchmark analizy czasu
-    datetime benchmark_start = TimeCurrent();
+    datetime benchmark_start = GetTimeCurrent();
     STimeInfo info = AnalyzeTime(test_timestamps[500]);
-    double analysis_time = (double)(TimeCurrent() - benchmark_start);
+    double analysis_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Analiza czasu: " + DoubleToString(analysis_time, 6) + "s\n";
     
     // Benchmark analizy trendu
-    benchmark_start = TimeCurrent();
+    benchmark_start = GetTimeCurrent();
     STimeAnalysis trend = AnalyzeTimeTrend(test_timestamps);
-    double trend_time = (double)(TimeCurrent() - benchmark_start);
+    double trend_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Analiza trendu: " + DoubleToString(trend_time, 6) + "s\n";
     
     // Benchmark analizy wzorców
-    benchmark_start = TimeCurrent();
+    benchmark_start = GetTimeCurrent();
     STimeAnalysis patterns = AnalyzeTimePatterns(test_timestamps);
-    double patterns_time = (double)(TimeCurrent() - benchmark_start);
+    double patterns_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Analiza wzorców: " + DoubleToString(patterns_time, 6) + "s\n";
     
     // Benchmark prognozowania
-    benchmark_start = TimeCurrent();
+    benchmark_start = GetTimeCurrent();
     STimeAnalysis forecast = ForecastTime(test_timestamps, 10);
-    double forecast_time = (double)(TimeCurrent() - benchmark_start);
+    double forecast_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Prognozowanie: " + DoubleToString(forecast_time, 6) + "s\n";
     
     // Benchmark generowania kalendarza
-    benchmark_start = TimeCurrent();
+    benchmark_start = GetTimeCurrent();
     SCalendar calendar = GenerateCalendar(2024, 12);
-    double calendar_time = (double)(TimeCurrent() - benchmark_start);
+    double calendar_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Generowanie kalendarza: " + DoubleToString(calendar_time, 6) + "s\n";
     
     // Benchmark wykrywania anomalii
-    benchmark_start = TimeCurrent();
+    benchmark_start = GetTimeCurrent();
     string anomalies = DetectTimeAnomalies(test_timestamps);
-    double anomalies_time = (double)(TimeCurrent() - benchmark_start);
+    double anomalies_time = (double)(GetTimeCurrent() - benchmark_start);
     benchmark_report += "Wykrywanie anomalii: " + DoubleToString(anomalies_time, 6) + "s\n";
     
     benchmark_report += "\n=== KONIEC BENCHMARK ===\n";
@@ -2171,7 +2231,7 @@ bool CheckMQL5Compatibility() {
     string issues = "";
     
     // Sprawdzenie podstawowych funkcji MQL5
-    datetime test_time = TimeCurrent();
+    datetime test_time = GetTimeCurrent();
     if(test_time <= 0) {
         compatible = false;
         issues += "- TimeCurrent() nie działa poprawnie\n";
@@ -2216,7 +2276,7 @@ bool InitializeTimeUtils() {
     }
     
     // Test podstawowych funkcji
-    datetime test_time = TimeCurrent();
+    datetime test_time = GetTimeCurrent();
     if(!IsValidTimestamp(test_time)) {
         Print("BŁĄD: Nieprawidłowy timestamp");
         return false;

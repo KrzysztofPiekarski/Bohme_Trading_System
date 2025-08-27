@@ -120,6 +120,21 @@ struct SCompressionResult {
 
 // === PODSTAWOWE FUNKCJE STRINGÓW ===
 
+// Custom function to get character at position (replaces StringGetCharacter)
+ushort StringGetCharacter(string str, int pos) {
+    if(pos < 0 || pos >= StringLen(str)) return 0;
+    string char_str = StringSubstr(str, pos, 1);
+    if(StringLen(char_str) > 0) {
+        // Convert single character string to ushort
+        uchar bytes[];
+        StringToCharArray(char_str, bytes, 0, 1);
+        if(ArraySize(bytes) > 0) {
+            return (ushort)bytes[0];
+        }
+    }
+    return 0;
+}
+
 // Funkcja do sprawdzania czy string jest pusty
 bool IsStringEmpty(string str) {
     return StringLen(str) == 0;
@@ -630,7 +645,7 @@ SStringInfo AnalyzeString(string str) {
 bool IsPalindrome(string str) {
     if(IsStringEmpty(str)) return true;
     
-    string cleaned = StringToLower(StringRemoveWhitespace(str));
+    string cleaned = Util_StringToLower(StringRemoveWhitespace(str));
     string reversed = StringReverse(cleaned);
     
     return cleaned == reversed;
@@ -640,8 +655,8 @@ bool IsPalindrome(string str) {
 bool IsAnagram(string str1, string str2) {
     if(StringLen(str1) != StringLen(str2)) return false;
     
-    string cleaned1 = StringToLower(StringRemoveWhitespace(str1));
-    string cleaned2 = StringToLower(StringRemoveWhitespace(str2));
+    string cleaned1 = Util_StringToLower(StringRemoveWhitespace(str1));
+    string cleaned2 = Util_StringToLower(StringRemoveWhitespace(str2));
     
     // Sortowanie znaków
     string sorted1 = StringSort(cleaned1);
@@ -691,37 +706,41 @@ int StringLevenshteinDistance(string str1, string str2) {
     if(len1 == 0) return len2;
     if(len2 == 0) return len1;
     
-    // Macierz odległości
-    int matrix[][];
-    ArrayResize(matrix, len1 + 1, len2 + 1);
+    // Optymalizacja pamięci - używamy tylko dwóch wierszy
+    int prev_row[];
+    int curr_row[];
+    ArrayResize(prev_row, len2 + 1);
+    ArrayResize(curr_row, len2 + 1);
     
-    // Inicjalizacja pierwszego wiersza i kolumny
-    for(int i = 0; i <= len1; i++) {
-        matrix[i][0] = i;
-    }
+    // Inicjalizacja pierwszego wiersza
     for(int j = 0; j <= len2; j++) {
-        matrix[0][j] = j;
+        prev_row[j] = j;
     }
     
-    // Obliczenie odległości
+    // Obliczenie odległości wiersz po wierszu
     for(int i = 1; i <= len1; i++) {
+        curr_row[0] = i;
+        
         for(int j = 1; j <= len2; j++) {
             ushort ch1 = StringGetCharacter(str1, i - 1);
             ushort ch2 = StringGetCharacter(str2, j - 1);
             
             int cost = (ch1 == ch2) ? 0 : 1;
             
-            matrix[i][j] = MathMin(
-                matrix[i - 1][j] + 1,     // usunięcie
-                MathMin(
-                    matrix[i][j - 1] + 1, // wstawienie
-                    matrix[i - 1][j - 1] + cost // zamiana
-                )
-            );
+            int deletion = prev_row[j] + 1;
+            int insertion = curr_row[j - 1] + 1;
+            int substitution = prev_row[j - 1] + cost;
+            
+            curr_row[j] = MathMin(deletion, MathMin(insertion, substitution));
+        }
+        
+        // Zamiana wierszy
+        for(int k = 0; k <= len2; k++) {
+            prev_row[k] = curr_row[k];
         }
     }
     
-    return matrix[len1][len2];
+    return curr_row[len2];
 }
 
 // Funkcja do obliczania podobieństwa stringów (0.0 - 1.0)
@@ -780,7 +799,9 @@ double StringJaroWinklerDistance(string str1, string str2) {
         int end = MathMin(len2 - 1, i + match_distance);
         
         for(int j = start; j <= end; j++) {
-            if(!str2_matches[j] && StringGetCharacter(str1, i) == StringGetCharacter(str2, j)) {
+            string ch1_str = StringSubstr(str1, i, 1);
+            string ch2_str = StringSubstr(str2, j, 1);
+            if(!str2_matches[j] && ch1_str == ch2_str) {
                 str1_matches[i] = true;
                 str2_matches[j] = true;
                 matches++;
@@ -1427,7 +1448,7 @@ SValidationResult ValidateUUID(string uuid) {
         return result;
     }
     
-    string trimmed = StringToUpper(StringTrim(uuid));
+    string trimmed = Util_StringToUpper(StringTrim(uuid));
     
     // Sprawdzenie formatu (8-4-4-4-12)
     if(StringLen(trimmed) != 36) {
@@ -2137,7 +2158,7 @@ string IntegerToHexString(int value) {
 int HexStringToInteger(string hex) {
     if(IsStringEmpty(hex)) return 0;
     
-    string upper_hex = StringToUpper(hex);
+    string upper_hex = Util_StringToUpper(hex);
     int result = 0;
     int len = StringLen(upper_hex);
     
@@ -2328,8 +2349,8 @@ string TestStringUtils() {
     string test_str = "  Hello World  ";
     test_report += "Oryginalny: '" + test_str + "'\n";
     test_report += "Trim: '" + StringTrim(test_str) + "'\n";
-    test_report += "Upper: '" + StringToUpper(test_str) + "'\n";
-    test_report += "Lower: '" + StringToLower(test_str) + "'\n";
+    test_report += "Upper: '" + Util_StringToUpper(test_str) + "'\n";
+    test_report += "Lower: '" + Util_StringToLower(test_str) + "'\n";
     test_report += "Capitalize: '" + StringCapitalize("hello") + "'\n";
     test_report += "Title Case: '" + StringTitleCase("hello world") + "'\n";
     test_report += "Reverse: '" + StringReverse("hello") + "'\n";
@@ -2485,8 +2506,8 @@ string GenerateStringUtilsExamples() {
     examples += "🔤 PODSTAWOWE OPERACJE:\n";
     examples += "string text = \"  Hello World  \";\n";
     examples += "string trimmed = StringTrim(text);           // \"Hello World\"\n";
-    examples += "string upper = StringToUpper(text);          // \"  HELLO WORLD  \"\n";
-    examples += "string lower = StringToLower(text);          // \"  hello world  \"\n";
+    examples += "string upper = Util_StringToUpper(text);          // \"  HELLO WORLD  \"\n";
+    examples += "string lower = Util_StringToLower(text);          // \"  hello world  \"\n";
     examples += "string title = StringTitleCase(\"hello world\"); // \"Hello World\"\n";
     examples += "string reversed = StringReverse(\"hello\");   // \"olleh\"\n\n";
     

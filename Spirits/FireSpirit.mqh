@@ -542,10 +542,16 @@ double FireSpiritAI::GetFireIntensity() {
 void FireSpiritAI::UpdateVolatilityModels() {
     // Aktualizuj zaawansowane AI (zachowane z pierwszej wersji)
     if(m_advanced_ai != NULL) {
-        double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
-        double current_volume = iVolume(Symbol(), PERIOD_CURRENT, 0);
+        double price_buffer[1];
+        long volume_buffer[1];
         
-        m_advanced_ai.UpdateData(current_price, current_volume);
+        if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 1, price_buffer) > 0 &&
+           CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, 1, volume_buffer) > 0) {
+            double current_price = price_buffer[0];
+            double current_volume = (double)volume_buffer[0];
+            
+            m_advanced_ai.UpdateData(current_price, current_volume);
+        }
         
         // Retrain models if needed (e.g., every 1000 updates)
         static int update_counter = 0;
@@ -566,8 +572,17 @@ void FireSpiritAI::UpdateVolatilityModels() {
     vol_index = (vol_index + 1) % 288;
     
     // Update energy buffers
-    double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
-    double current_volume = iVolume(Symbol(), PERIOD_CURRENT, 0);
+    double price_buffer[1];
+    long volume_buffer[1];
+    double current_price = 0.0;
+    double current_volume = 0.0;
+    
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 1, price_buffer) > 0) {
+        current_price = price_buffer[0];
+    }
+    if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, 1, volume_buffer) > 0) {
+        current_volume = (double)volume_buffer[0];
+    }
     
     static int energy_index = 0;
     m_price_energy[energy_index] = CalculatePriceEnergy();
@@ -712,7 +727,7 @@ double FireSpiritAI::CalculatePriceEnergy() {
 
 // Volume Energy Calculator  
 double FireSpiritAI::CalculateVolumeEnergy() {
-    double volumes[];
+    long volumes[];
     int bars = 50;
     ArrayResize(volumes, bars);
     ArraySetAsSeries(volumes, false);
@@ -926,14 +941,24 @@ double FireSpiritAI::CalculateMomentumEnergy() {
 // Calculate Microstructure Energy
 double FireSpiritAI::CalculateMicrostructureEnergy() {
     // Bid-ask spread approximation using ATR
-    double atr = iATR(Symbol(), PERIOD_CURRENT, 14, 0);
-    double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
+    int atr_handle = iATR(Symbol(), PERIOD_CURRENT, 14);
+    double atr_buffer[1];
+    double price_buffer[1];
     
-    if(current_price > 0) {
-        double spread_ratio = (atr / current_price) * 100.0;
-        return MathMin(100.0, spread_ratio * 1000.0); // Scale up
+    if(CopyBuffer(atr_handle, 0, 0, 1, atr_buffer) > 0 && 
+       CopyClose(Symbol(), PERIOD_CURRENT, 0, 1, price_buffer) > 0) {
+        double atr = atr_buffer[0];
+        double current_price = price_buffer[0];
+        
+        IndicatorRelease(atr_handle);
+        
+        if(current_price > 0) {
+            double spread_ratio = (atr / current_price) * 100.0;
+            return MathMin(100.0, spread_ratio * 1000.0); // Scale up
+        }
     }
     
+    IndicatorRelease(atr_handle);
     return 0.0;
 }
 

@@ -1,5 +1,6 @@
 ﻿// Kompletna implementacja Ducha Goryczki - Momentum & Breakthrough Detection
 #include <Indicators\Indicators.mqh>
+#include "../Utils/LoggingSystem.mqh"
 
 // Brakujące definicje klas
 class CNeuralNetworkMomentum {
@@ -404,7 +405,7 @@ ENUM_MOMENTUM_PHASE BitternessSpirit::GetMomentumPhase() {
 double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
     int bars_count = 50;
     double prices[];
-    double volumes[];
+    long volumes[];
     
     // Resize arrays first
     ArrayResize(prices, bars_count);
@@ -414,7 +415,7 @@ double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
     
     // Get price and volume data
     int price_count = CopyClose(Symbol(), timeframe, 0, bars_count, prices);
-    int volume_count = CopyRealVolume(Symbol(), timeframe, 0, bars_count, volumes);
+    int volume_count = CopyTickVolume(Symbol(), timeframe, 0, bars_count, volumes);
     
     if(price_count <= 0 || volume_count <= 0) {
         return 0.0;
@@ -426,8 +427,15 @@ double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
     double awesome_momentum = CalculateAwesome(prices);        // Awesome Oscillator
     double williams_momentum = CalculateWilliamsR(prices, 14); // Williams %R
     
+    // Convert volumes to double for calculations
+    double volumes_double[];
+    ArrayResize(volumes_double, bars_count);
+    for(int i = 0; i < bars_count; i++) {
+        volumes_double[i] = (double)volumes[i];
+    }
+    
     // Volume-weighted momentum
-    double vwap = CalculateVWAP(prices, volumes);
+    double vwap = CalculateVWAP(prices, volumes_double);
     double volume_momentum = (prices[bars_count-1] - vwap) / vwap * 100;
     
     // Combine momentum indicators
@@ -442,7 +450,7 @@ double BitternessSpirit::CalculateTimeframeMomentum(ENUM_TIMEFRAMES timeframe) {
 
 // Volume breakthrough detection
 double BitternessSpirit::CalculateVolumeBreakthrough() {
-    double volumes[];
+    long volumes[];
     int bars_count = 100;
     
     // Resize array first
@@ -451,16 +459,22 @@ double BitternessSpirit::CalculateVolumeBreakthrough() {
     
     int volume_count = -1;
     if(bars_count > 0) {
-        volume_count = CopyRealVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes);
+        volume_count = CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, bars_count, volumes);
     }
     if(volume_count <= 0) {
         return 0.0;
     }
     
-    // Calculate volume statistics
-    double avg_volume = CalculateAverage(volumes, 50, 49); // Average of last 50 bars (excluding current)
-    double volume_std = CalculateStandardDeviation(volumes, 50, 49);
-    double current_volume = volumes[bars_count-1];
+    // Calculate volume statistics - convert long to double
+    double volumes_double[];
+    ArrayResize(volumes_double, bars_count);
+    for(int i = 0; i < bars_count; i++) {
+        volumes_double[i] = (double)volumes[i];
+    }
+    
+    double avg_volume = CalculateAverage(volumes_double, 50, 49); // Average of last 50 bars (excluding current)
+    double volume_std = CalculateStandardDeviation(volumes_double, 50, 49);
+    double current_volume = (double)volumes[bars_count-1];
     
     // Z-score for volume
     double volume_zscore = (current_volume - avg_volume) / volume_std;
