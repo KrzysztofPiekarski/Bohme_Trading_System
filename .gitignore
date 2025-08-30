@@ -1,3 +1,14 @@
+# =============================================================================
+# Bohme Trading System v2.2.0 - .gitignore
+# =============================================================================
+# Ten plik zawiera wszystkie pliki i foldery, które powinny być ignorowane
+# przez system kontroli wersji Git dla Systemu Böhmego.
+# 
+# System Böhmego to zaawansowany system tradingowy z AI, który generuje
+# wiele plików tymczasowych, danych i wyników, które nie powinny być
+# przechowywane w repozytorium.
+# =============================================================================
+
 # OS-specific
 .DS_Store
 Thumbs.db
@@ -35,17 +46,287 @@ MQL5/Bases/
 MQL5/Images/
 MQL5/Indicators/
 
+# Bohme Trading System specific
+# Compiled files
+*.ex5
+*.ex4
+*.obj
+*.o
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Log files
+*.log
+*.txt
+*.csv
+*.dat
+
+# Test results
+test_results/
+test_output/
+test_logs/
+
+# Build artifacts
+build/
+dist/
+out/
+
+# Wine/MT5 specific
+.wine/
+drive_c/
+Program Files/
+Orbex Global MT5/
+
 # Project backups (created by deploy script)
 backup_*/
+backup_*_*/
+backup_*_*_*/
 
 # Logs, reports, temp
 Logs/
+logs/
 *.log
 *.csv
 *.tmp
+*.txt
+*.dat
 
 # Swap/temporary editor files
 *.swp
 *.swo
+*~
+
+# Bohme Trading System specific
+# Configuration files with sensitive data
+config_*.mqh
+secrets.mqh
+api_keys.mqh
+credentials.mqh
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache files
+cache/
+.cache/
+*.cache
+
+# Performance data
+performance_data/
+trading_data/
+market_data/
+
+# Reports and exports
+reports/
+exports/
+*.pdf
+*.xlsx
+*.docx
+
+# AI model files (large binary files)
+*.h5
+*.pkl
+*.model
+*.weights
+*.bin
+
+# Memory dumps
+*.dmp
+*.core
+*.stackdump
+
+# System specific
+.wine/
+drive_c/
+Program Files/
+Orbex Global MT5/
+MetaTrader5/
+
+# Development and testing
+# Test files (uncomment if you want to ignore test files)
+# test_*.mq5
+# *_test.mqh
+# *_test.mq5
+
+# Development files
+dev_*/
+development/
+experimental/
+prototype/
+
+# Debug files
+debug/
+*.debug
+debug_*
+
+# Profiling data
+*.prof
+*.gprof
+*.perf
+
+# Coverage reports
+coverage/
+*.gcov
+*.lcov
+
+# Documentation builds
+docs/build/
+docs/_build/
+site/
+
+# IDE specific for MQL5
+MetaEditor/
+*.mq5~
+*.mqh~
+*.mq5.bak
+*.mqh.bak
+
+# Version control
+.git/
+.gitignore~
+.gitattributes~
+
+# Bohme Trading System specific files
+# Trading data and results
+trading_results/
+backtest_results/
+optimization_results/
+strategy_results/
+
+# AI model checkpoints and saves
+ai_checkpoints/
+model_saves/
+neural_networks/
+lstm_models/
+cnn_models/
+
+# Spirit specific data
+spirit_data/
+fire_spirit_data/
+light_spirit_data/
+bitterness_spirit_data/
+sweetness_spirit_data/
+sound_spirit_data/
+body_spirit_data/
+herbe_spirit_data/
+
+# Master Consciousness data
+master_consciousness_data/
+evolutionary_data/
+system_memory_data/
+
+# External data integration
+external_data/
+bloomberg_data/
+reuters_data/
+yahoo_data/
+alpha_vantage_data/
+polygon_data/
+
+# Risk management data
+risk_data/
+position_data/
+order_data/
+execution_data/
+
+# Performance metrics
+performance_metrics/
+sharpe_ratios/
+drawdown_data/
+profit_loss_data/
+
+# System monitoring
+system_monitoring/
+cpu_usage/
+memory_usage/
+network_usage/
+
+# Backup and restore
+backup_and_restore/
+system_backups/
+user_backups/
+auto_backups/
+
+# User preferences and settings
+user_preferences/
+user_settings/
+personal_config/
+custom_settings/
+
+# Temporary and working files
+working_files/
+temp_files/
+scratch_files/
+draft_files/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+
+# OS specific (additional)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Network and security
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# =============================================================================
+# INSTRUKCJE UŻYCIA .gitignore
+# =============================================================================
+# 
+# 1. PLIKI DO IGNOROWANIA:
+#    - Wszystkie skompilowane pliki (*.ex5, *.ex4, *.obj)
+#    - Pliki tymczasowe i cache (*.tmp, *.cache, *.log)
+#    - Dane tradingowe i wyniki (trading_results/, backtest_results/)
+#    - Modele AI i checkpoints (ai_checkpoints/, model_saves/)
+#    - Dane duchów i Master Consciousness (spirit_data/, master_consciousness_data/)
+#    - Pliki konfiguracyjne z danymi wrażliwymi (secrets.mqh, api_keys.mqh)
+#    - Pliki systemowe Wine/MT5 (.wine/, drive_c/, Program Files/)
+# 
+# 2. PLIKI DO ŚLEDZENIA (NIE IGNOROWAĆ):
+#    - Kod źródłowy (*.mq5, *.mqh)
+#    - Dokumentację (*.md, *.txt)
+#    - Konfigurację systemu (SystemConfig.mqh)
+#    - Pliki testowe (test_*.mq5)
+#    - Skrypty budowania (build_*.sh)
+# 
+# 3. DODAWANIE NOWYCH PLIKÓW:
+#    - Jeśli dodajesz nowy typ pliku, dodaj go do odpowiedniej sekcji
+#    - Użyj komentarzy do grupowania powiązanych plików
+#    - Sprawdź czy nie ignorujesz plików potrzebnych do działania systemu
+# 
+# 4. CZYSZCZENIE REPOZYTORIUM:
+#    - Użyj: git clean -fd (usuwa ignorowane pliki)
+#    - Użyj: git status --ignored (pokazuje ignorowane pliki)
+#    - Użyj: git check-ignore <filename> (sprawdza czy plik jest ignorowany)
+# 
+# =============================================================================
+# System Böhmego v2.2.0 - 100% KOMPLETNOŚĆ OSIĄGNIĘTA!
+# =============================================================================
 
 

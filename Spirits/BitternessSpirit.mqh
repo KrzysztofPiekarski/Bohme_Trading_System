@@ -1,57 +1,577 @@
 ﻿// Kompletna implementacja Ducha Goryczki - Momentum & Breakthrough Detection
 #include <Indicators\Indicators.mqh>
 #include "../Utils/LoggingSystem.mqh"
+#include "../Core/CentralAI.mqh"  // 🆕 Centralny AI
 
-// Brakujące definicje klas
+// Centralny AI - Neural Network Momentum
 class CNeuralNetworkMomentum {
+private:
+    CCentralLSTM* m_momentum_lstm;
+    CCentralAttention* m_momentum_attention;
+    bool m_is_initialized;
+    
 public:
-    CNeuralNetworkMomentum() {}
-    bool Initialize() { return true; }
-    void UpdateData() {}
-    double Predict(double &inputs[]) {
-        // Placeholder implementation
-        double sum = 0.0;
-        for(int i = 0; i < ArraySize(inputs); i++) {
-            sum += inputs[i];
+    CNeuralNetworkMomentum() {
+        m_momentum_lstm = NULL;
+        m_momentum_attention = NULL;
+        m_is_initialized = false;
+    }
+    
+    ~CNeuralNetworkMomentum() {
+        if(m_momentum_lstm != NULL) delete m_momentum_lstm;
+        if(m_momentum_attention != NULL) delete m_momentum_attention;
+    }
+    
+    bool Initialize() {
+        // Inicjalizacja centralnego LSTM
+        m_momentum_lstm = new CCentralLSTM(32, 64, 1, 20);
+        if(m_momentum_lstm == NULL) return false;
+        
+        // Inicjalizacja centralnego Attention
+        m_momentum_attention = new CCentralAttention(32, 4, 20);
+        if(m_momentum_attention == NULL) return false;
+        
+        if(!m_momentum_lstm.Initialize() || !m_momentum_attention.Initialize()) {
+            return false;
         }
-        return MathMax(0.0, MathMin(1.0, sum / ArraySize(inputs)));
+        
+        m_is_initialized = true;
+        return true;
+    }
+    
+    void UpdateData() {
+        // Aktualizacja danych w centralnym AI
+        if(m_is_initialized) {
+            // Można dodać logikę aktualizacji
+        }
+    }
+    
+    double Predict(double &inputs[]) {
+        if(!m_is_initialized) return 0.5;
+        
+        // Przygotuj dane dla LSTM
+        double input_sequence[][];
+        PrepareMomentumInput(inputs, input_sequence);
+        
+        // Użyj centralnego LSTM do predykcji
+        double lstm_prediction = m_momentum_lstm.Predict(input_sequence);
+        
+        // Użyj centralnego Attention do poprawy predykcji
+        double attention_output[][];
+        m_momentum_attention.ApplyAttention(input_sequence, attention_output);
+        
+        // Połącz predykcje
+        double final_prediction = (lstm_prediction + GetAttentionAverage(attention_output)) / 2.0;
+        
+        return MathMax(0.0, MathMin(1.0, final_prediction));
+    }
+    
+private:
+    void PrepareMomentumInput(double &inputs[], double &sequence[][]) {
+        int lookback = 20;
+        int features = ArraySize(inputs);
+        
+        ArrayResize(sequence, lookback);
+        for(int i = 0; i < lookback; i++) {
+            ArrayResize(sequence[i], features);
+            for(int j = 0; j < features; j++) {
+                sequence[i][j] = inputs[j] * (1.0 + i * 0.01); // Dodaj temporalność
+            }
+        }
+    }
+    
+    double GetAttentionAverage(double &attention_output[][]) {
+        if(ArraySize(attention_output) == 0) return 0.5;
+        
+        double sum = 0.0;
+        int count = 0;
+        
+        for(int i = 0; i < ArraySize(attention_output); i++) {
+            if(ArraySize(attention_output[i]) > 0) {
+                sum += attention_output[i][0]; // Pierwszy wymiar
+                count++;
+            }
+        }
+        
+        return count > 0 ? sum / count : 0.5;
     }
 };
 
 class CVolumeProfileAnalyzer {
+private:
+    CCentralCNN* m_volume_cnn;
+    CCentralKalmanFilter* m_volume_kalman;
+    bool m_is_initialized;
+    
 public:
-    CVolumeProfileAnalyzer() {}
-    bool Initialize() { return true; }
-    void UpdateVolumeData() {}
+    CVolumeProfileAnalyzer() {
+        m_volume_cnn = NULL;
+        m_volume_kalman = NULL;
+        m_is_initialized = false;
+    }
+    
+    ~CVolumeProfileAnalyzer() {
+        if(m_volume_cnn != NULL) delete m_volume_cnn;
+        if(m_volume_kalman != NULL) delete m_volume_kalman;
+    }
+    
+    bool Initialize() {
+        // Inicjalizacja centralnego CNN dla analizy wolumenu
+        m_volume_cnn = new CCentralCNN(4, 3, 16); // OHLC + Volume
+        if(m_volume_cnn == NULL) return false;
+        
+        // Inicjalizacja centralnego Kalman Filter
+        m_volume_kalman = new CCentralKalmanFilter(4, 4);
+        if(m_volume_kalman == NULL) return false;
+        
+        if(!m_volume_cnn.Initialize() || !m_volume_kalman.Initialize()) {
+            return false;
+        }
+        
+        m_is_initialized = true;
+        return true;
+    }
+    
+    void UpdateVolumeData() {
+        // Aktualizacja danych wolumenu w centralnym AI
+        if(m_is_initialized) {
+            // Można dodać logikę aktualizacji
+        }
+    }
+    
     double GetBreakthroughStrength() {
-        // Placeholder implementation
-        return 50.0 + MathRand() % 50; // Random 50-100
+        if(!m_is_initialized) return 50.0;
+        
+        // Przygotuj dane OHLC + Volume
+        double volume_data[][];
+        PrepareVolumeData(volume_data);
+        
+        // Użyj centralnego CNN do rozpoznania wzorców
+        double pattern_probabilities[];
+        m_volume_cnn.RecognizePatterns(volume_data, pattern_probabilities);
+        
+        // Użyj centralnego Kalman Filter do filtrowania
+        double measurement[] = {GetVolumeAverage(), GetPriceVolatility(), GetVolumeSpike(), GetBreakthroughSignal()};
+        double* filtered = m_volume_kalman.Filter(measurement);
+        
+        // Oblicz siłę przełamania na podstawie wzorców i filtrowania
+        double pattern_strength = GetPatternStrength(pattern_probabilities);
+        double filtered_strength = filtered != NULL ? filtered[3] : 50.0;
+        
+        return MathMax(0.0, MathMin(100.0, (pattern_strength + filtered_strength) / 2.0));
+    }
+    
+private:
+    void PrepareVolumeData(double &volume_data[][]) {
+        int bars = 50;
+        int channels = 4; // OHLC
+        
+        ArrayResize(volume_data, bars);
+        for(int i = 0; i < bars; i++) {
+            ArrayResize(volume_data[i], channels);
+            
+            // Pobierz dane OHLC
+            volume_data[i][0] = iOpen(Symbol(), PERIOD_CURRENT, i);
+            volume_data[i][1] = iHigh(Symbol(), PERIOD_CURRENT, i);
+            volume_data[i][2] = iLow(Symbol(), PERIOD_CURRENT, i);
+            volume_data[i][3] = iClose(Symbol(), PERIOD_CURRENT, i);
+        }
+    }
+    
+    double GetVolumeAverage() {
+        double volumes[];
+        if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, 20, volumes) == 20) {
+            double sum = 0.0;
+            for(int i = 0; i < 20; i++) {
+                sum += volumes[i];
+            }
+            return sum / 20.0;
+        }
+        return 0.0;
+    }
+    
+    double GetPriceVolatility() {
+        double closes[];
+        if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 20, closes) == 20) {
+            double avg = 0.0;
+            for(int i = 0; i < 20; i++) {
+                avg += closes[i];
+            }
+            avg /= 20.0;
+            
+            double variance = 0.0;
+            for(int i = 0; i < 20; i++) {
+                variance += MathPow(closes[i] - avg, 2);
+            }
+            variance /= 20.0;
+            
+            return MathSqrt(variance);
+        }
+        return 0.0;
+    }
+    
+    double GetVolumeSpike() {
+        double volumes[];
+        if(CopyTickVolume(Symbol(), PERIOD_CURRENT, 0, 20, volumes) == 20) {
+            double current_volume = volumes[0];
+            double avg_volume = 0.0;
+            
+            for(int i = 1; i < 20; i++) {
+                avg_volume += volumes[i];
+            }
+            avg_volume /= 19.0;
+            
+            return current_volume > avg_volume * 2.0 ? 100.0 : 50.0;
+        }
+        return 50.0;
+    }
+    
+    double GetBreakthroughSignal() {
+        // Prosty sygnał przełamania na podstawie ceny
+        double closes[];
+        if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 10, closes) == 10) {
+            double current_price = closes[0];
+            double avg_price = 0.0;
+            
+            for(int i = 1; i < 10; i++) {
+                avg_price += closes[i];
+            }
+            avg_price /= 9.0;
+            
+            if(current_price > avg_price * 1.02) return 80.0; // Bullish breakthrough
+            if(current_price < avg_price * 0.98) return 20.0; // Bearish breakthrough
+            return 50.0; // No breakthrough
+        }
+        return 50.0;
+    }
+    
+    double GetPatternStrength(double &probabilities[]) {
+        if(ArraySize(probabilities) == 0) return 50.0;
+        
+        double max_prob = 0.0;
+        for(int i = 0; i < ArraySize(probabilities); i++) {
+            if(probabilities[i] > max_prob) {
+                max_prob = probabilities[i];
+            }
+        }
+        
+        return max_prob * 100.0; // Konwertuj na procent
     }
 };
 
 class CFractalDimension {
+private:
+    CCentralCNN* m_fractal_cnn;
+    CCentralAttention* m_fractal_attention;
+    bool m_is_initialized;
+    
 public:
-    CFractalDimension() {}
-    bool Initialize() { return true; }
-    void UpdateFractalData() {}
-    double CalculateDimension() {
-        // Placeholder implementation
-        return 1.5 + (MathRand() % 50) / 100.0; // 1.5-2.0
+    CFractalDimension() {
+        m_fractal_cnn = NULL;
+        m_fractal_attention = NULL;
+        m_is_initialized = false;
     }
+    
+    ~CFractalDimension() {
+        if(m_fractal_cnn != NULL) delete m_fractal_cnn;
+        if(m_fractal_attention != NULL) delete m_fractal_attention;
+    }
+    
+    bool Initialize() {
+        // Inicjalizacja centralnego CNN dla analizy fraktali
+        m_fractal_cnn = new CCentralCNN(4, 5, 32); // OHLC + większe jądro dla fraktali
+        if(m_fractal_cnn == NULL) return false;
+        
+        // Inicjalizacja centralnego Attention dla analizy wzorców
+        m_fractal_attention = new CCentralAttention(64, 8, 20);
+        if(m_fractal_attention == NULL) return false;
+        
+        if(!m_fractal_cnn.Initialize() || !m_fractal_attention.Initialize()) {
+            return false;
+        }
+        
+        m_is_initialized = true;
+        return true;
+    }
+    
+    void UpdateFractalData() {
+        // Aktualizacja danych fraktali w centralnym AI
+        if(m_is_initialized) {
+            // Można dodać logikę aktualizacji
+        }
+    }
+    
+    double CalculateDimension() {
+        if(!m_is_initialized) return 1.5;
+        
+        // Przygotuj dane OHLC dla analizy fraktali
+        double fractal_data[][];
+        PrepareFractalData(fractal_data);
+        
+        // Użyj centralnego CNN do rozpoznania wzorców fraktali
+        double fractal_probabilities[];
+        m_fractal_cnn.RecognizePatterns(fractal_data, fractal_probabilities);
+        
+        // Użyj centralnego Attention do analizy wzorców
+        double attention_output[][];
+        m_fractal_attention.ApplyAttention(fractal_data, attention_output);
+        
+        // Oblicz wymiar fraktalny na podstawie wzorców
+        double pattern_dimension = GetPatternBasedDimension(fractal_probabilities);
+        double attention_dimension = GetAttentionBasedDimension(attention_output);
+        
+        // Połącz wymiary
+        double final_dimension = (pattern_dimension + attention_dimension) / 2.0;
+        
+        return MathMax(1.0, MathMin(3.0, final_dimension));
+    }
+    
     double GetConsistency() {
-        // Placeholder implementation
-        return 60.0 + MathRand() % 40; // 60-100
+        if(!m_is_initialized) return 60.0;
+        
+        // Oblicz spójność na podstawie stabilności wymiaru fraktalnego
+        double dimensions[];
+        ArrayResize(dimensions, 10);
+        
+        for(int i = 0; i < 10; i++) {
+            dimensions[i] = CalculateDimension();
+        }
+        
+        // Oblicz odchylenie standardowe
+        double avg = 0.0;
+        for(int i = 0; i < 10; i++) {
+            avg += dimensions[i];
+        }
+        avg /= 10.0;
+        
+        double variance = 0.0;
+        for(int i = 0; i < 10; i++) {
+            variance += MathPow(dimensions[i] - avg, 2);
+        }
+        variance /= 10.0;
+        
+        double std_dev = MathSqrt(variance);
+        
+        // Spójność jest odwrotnie proporcjonalna do odchylenia
+        double consistency = MathMax(0.0, MathMin(100.0, 100.0 - std_dev * 50.0));
+        
+        return consistency;
+    }
+    
+private:
+    void PrepareFractalData(double &fractal_data[][]) {
+        int bars = 100; // Więcej danych dla analizy fraktali
+        int channels = 4; // OHLC
+        
+        ArrayResize(fractal_data, bars);
+        for(int i = 0; i < bars; i++) {
+            ArrayResize(fractal_data[i], channels);
+            
+            // Pobierz dane OHLC
+            fractal_data[i][0] = iOpen(Symbol(), PERIOD_CURRENT, i);
+            fractal_data[i][1] = iHigh(Symbol(), PERIOD_CURRENT, i);
+            fractal_data[i][2] = iLow(Symbol(), PERIOD_CURRENT, i);
+            fractal_data[i][3] = iClose(Symbol(), PERIOD_CURRENT, i);
+        }
+    }
+    
+    double GetPatternBasedDimension(double &probabilities[]) {
+        if(ArraySize(probabilities) == 0) return 1.5;
+        
+        // Mapuj prawdopodobieństwa wzorców na wymiary fraktalne
+        double dimension = 1.0; // Podstawowy wymiar
+        
+        for(int i = 0; i < ArraySize(probabilities); i++) {
+            dimension += probabilities[i] * 0.5; // Każdy wzorzec dodaje do wymiaru
+        }
+        
+        return MathMax(1.0, MathMin(3.0, dimension));
+    }
+    
+    double GetAttentionBasedDimension(double &attention_output[][]) {
+        if(ArraySize(attention_output) == 0) return 1.5;
+        
+        // Analizuj uwagę na różnych skalach czasowych
+        double attention_sum = 0.0;
+        int attention_count = 0;
+        
+        for(int i = 0; i < ArraySize(attention_output); i++) {
+            if(ArraySize(attention_output[i]) > 0) {
+                attention_sum += attention_output[i][0];
+                attention_count++;
+            }
+        }
+        
+        if(attention_count == 0) return 1.5;
+        
+        double avg_attention = attention_sum / attention_count;
+        
+        // Mapuj uwagę na wymiar fraktalny
+        return 1.0 + avg_attention * 2.0; // 1.0 - 3.0
     }
 };
 
 class CWaveAnalyzer {
+private:
+    CCentralLSTM* m_wave_lstm;
+    CCentralAttention* m_wave_attention;
+    bool m_is_initialized;
+    
 public:
-    CWaveAnalyzer() {}
-    bool Initialize() { return true; }
-    void UpdateWaveData() {}
+    CWaveAnalyzer() {
+        m_wave_lstm = NULL;
+        m_wave_attention = NULL;
+        m_is_initialized = false;
+    }
+    
+    ~CWaveAnalyzer() {
+        if(m_wave_lstm != NULL) delete m_wave_lstm;
+        if(m_wave_attention != NULL) delete m_wave_attention;
+    }
+    
+    bool Initialize() {
+        // Inicjalizacja centralnego LSTM dla analizy fal
+        m_wave_lstm = new CCentralLSTM(16, 32, 1, 30); // Krótsze sekwencje dla fal
+        if(m_wave_lstm == NULL) return false;
+        
+        // Inicjalizacja centralnego Attention dla analizy wzorców fal
+        m_wave_attention = new CCentralAttention(32, 4, 30);
+        if(m_wave_attention == NULL) return false;
+        
+        if(!m_wave_lstm.Initialize() || !m_wave_attention.Initialize()) {
+            return false;
+        }
+        
+        m_is_initialized = true;
+        return true;
+    }
+    
+    void UpdateWaveData() {
+        // Aktualizacja danych fal w centralnym AI
+        if(m_is_initialized) {
+            // Można dodać logikę aktualizacji
+        }
+    }
+    
     double GetCurrentWaveStrength() {
-        // Placeholder implementation
-        return 40.0 + MathRand() % 60; // 40-100
+        if(!m_is_initialized) return 50.0;
+        
+        // Przygotuj dane dla analizy fal
+        double wave_data[][];
+        PrepareWaveData(wave_data);
+        
+        // Użyj centralnego LSTM do predykcji siły fali
+        double lstm_prediction = m_wave_lstm.Predict(wave_data);
+        
+        // Użyj centralnego Attention do analizy wzorców fal
+        double attention_output[][];
+        m_wave_attention.ApplyAttention(wave_data, attention_output);
+        
+        // Oblicz siłę fali na podstawie LSTM i Attention
+        double wave_strength = GetWaveStrengthFromLSTM(lstm_prediction);
+        double pattern_strength = GetWaveStrengthFromPatterns(attention_output);
+        
+        // Połącz wyniki
+        double final_strength = (wave_strength + pattern_strength) / 2.0;
+        
+        return MathMax(0.0, MathMin(100.0, final_strength));
+    }
+    
+private:
+    void PrepareWaveData(double &wave_data[][]) {
+        int bars = 30; // Krótsze okno dla analizy fal
+        int features = 6; // OHLC + RSI + MACD
+        
+        ArrayResize(wave_data, bars);
+        for(int i = 0; i < bars; i++) {
+            ArrayResize(wave_data[i], features);
+            
+            // OHLC
+            wave_data[i][0] = iOpen(Symbol(), PERIOD_CURRENT, i);
+            wave_data[i][1] = iHigh(Symbol(), PERIOD_CURRENT, i);
+            wave_data[i][2] = iLow(Symbol(), PERIOD_CURRENT, i);
+            wave_data[i][3] = iClose(Symbol(), PERIOD_CURRENT, i);
+            
+            // RSI
+            wave_data[i][4] = CalculateRSI(i);
+            
+            // MACD
+            wave_data[i][5] = CalculateMACD(i);
+        }
+    }
+    
+    double CalculateRSI(int shift) {
+        double closes[];
+        if(CopyClose(Symbol(), PERIOD_CURRENT, shift, 15, closes) == 15) {
+            double gains = 0.0, losses = 0.0;
+            
+            for(int i = 1; i < 15; i++) {
+                double change = closes[i] - closes[i-1];
+                if(change > 0) gains += change;
+                else losses -= change;
+            }
+            
+            double avg_gain = gains / 14.0;
+            double avg_loss = losses / 14.0;
+            
+            if(avg_loss == 0) return 100.0;
+            
+            double rs = avg_gain / avg_loss;
+            return 100.0 - (100.0 / (1.0 + rs));
+        }
+        return 50.0;
+    }
+    
+    double CalculateMACD(int shift) {
+        double closes[];
+        if(CopyClose(Symbol(), PERIOD_CURRENT, shift, 26, closes) == 26) {
+            // Prosty MACD
+            double ema12 = 0.0, ema26 = 0.0;
+            
+            // EMA 12
+            double multiplier12 = 2.0 / (12.0 + 1.0);
+            ema12 = closes[0];
+            for(int i = 1; i < 26; i++) {
+                ema12 = (closes[i] * multiplier12) + (ema12 * (1.0 - multiplier12));
+            }
+            
+            // EMA 26
+            double multiplier26 = 2.0 / (26.0 + 1.0);
+            ema26 = closes[0];
+            for(int i = 1; i < 26; i++) {
+                ema26 = (closes[i] * multiplier26) + (ema26 * (1.0 - multiplier26));
+            }
+            
+            return ema12 - ema26;
+        }
+        return 0.0;
+    }
+    
+    double GetWaveStrengthFromLSTM(double lstm_prediction) {
+        // Mapuj predykcję LSTM na siłę fali (0-100)
+        return MathMax(0.0, MathMin(100.0, (lstm_prediction + 1.0) * 50.0));
+    }
+    
+    double GetWaveStrengthFromPatterns(double &attention_output[][]) {
+        if(ArraySize(attention_output) == 0) return 50.0;
+        
+        // Analizuj wzorce uwagi dla określenia siły fali
+        double attention_sum = 0.0;
+        int attention_count = 0;
+        
+        for(int i = 0; i < ArraySize(attention_output); i++) {
+            if(ArraySize(attention_output[i]) > 0) {
+                attention_sum += attention_output[i][0];
+                attention_count++;
+            }
+        }
+        
+        if(attention_count == 0) return 50.0;
+        
+        double avg_attention = attention_sum / attention_count;
+        
+        // Mapuj uwagę na siłę fali
+        return avg_attention * 100.0;
     }
 };
 
@@ -89,53 +609,104 @@ double CalculateCorrelation(double value1, double value2) {
 }
 
 double DetectVolatilityExpansion() {
-    // Placeholder implementation
-    return 30.0 + MathRand() % 70; // 30-100
+    // Prawdziwa implementacja detekcji ekspansji zmienności
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 20, closes) == 20) {
+        double current_volatility = CalculateVolatility(closes, 10);
+        double historical_volatility = CalculateVolatility(closes, 20);
+        
+        if(historical_volatility > 0) {
+            double expansion_ratio = current_volatility / historical_volatility;
+            return MathMax(0.0, MathMin(100.0, (expansion_ratio - 1.0) * 100.0));
+        }
+    }
+    return 30.0; // Fallback
 }
 
 double GetRSI() {
-    // Placeholder implementation
-    return 30.0 + MathRand() % 40; // 30-70
+    // Prawdziwa implementacja RSI
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 15, closes) == 15) {
+        return CalculateRSIFromData(closes);
+    }
+    return 50.0; // Neutral
 }
 
 double GetMACD() {
-    // Placeholder implementation
-    return -50.0 + MathRand() % 100; // -50 to 50
+    // Prawdziwa implementacja MACD
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 26, closes) == 26) {
+        return CalculateMACDFromData(closes);
+    }
+    return 0.0; // Neutral
 }
 
 double GetStochastic() {
-    // Placeholder implementation
-    return MathRand() % 100; // 0-100
+    // Prawdziwa implementacja Stochastic
+    double highs[], lows[], closes[];
+    if(CopyHigh(Symbol(), PERIOD_CURRENT, 0, 14, highs) == 14 &&
+       CopyLow(Symbol(), PERIOD_CURRENT, 0, 14, lows) == 14 &&
+       CopyClose(Symbol(), PERIOD_CURRENT, 0, 14, closes) == 14) {
+        return CalculateStochasticFromData(highs, lows, closes);
+    }
+    return 50.0; // Neutral
 }
 
 double GetADX() {
-    // Placeholder implementation
-    return 20.0 + MathRand() % 60; // 20-80
+    // Prawdziwa implementacja ADX
+    double highs[], lows[], closes[];
+    if(CopyHigh(Symbol(), PERIOD_CURRENT, 0, 20, highs) == 20 &&
+       CopyLow(Symbol(), PERIOD_CURRENT, 0, 20, lows) == 20 &&
+       CopyClose(Symbol(), PERIOD_CURRENT, 0, 20, closes) == 20) {
+        return CalculateADXFromData(highs, lows, closes);
+    }
+    return 25.0; // Weak trend
 }
 
 double GetSupportResistanceStrength() {
-    // Placeholder implementation
-    return 40.0 + MathRand() % 60; // 40-100
+    // Prawdziwa implementacja siły wsparcia/oporu
+    double highs[], lows[];
+    if(CopyHigh(Symbol(), PERIOD_CURRENT, 0, 50, highs) == 50 &&
+       CopyLow(Symbol(), PERIOD_CURRENT, 0, 50, lows) == 50) {
+        return CalculateSupportResistanceStrength(highs, lows);
+    }
+    return 50.0; // Neutral
 }
 
 double GetTrendStrength() {
-    // Placeholder implementation
-    return 30.0 + MathRand() % 70; // 30-100
+    // Prawdziwa implementacja siły trendu
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 20, closes) == 20) {
+        return CalculateTrendStrength(closes);
+    }
+    return 50.0; // Neutral
 }
 
 double CalculateDerivedMetric(int index) {
-    // Placeholder implementation
-    return (MathRand() % 100) / 100.0; // 0-1
+    // Prawdziwa implementacja metryki pochodnej
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 20, closes) == 20) {
+        return CalculateDerivedMetricFromData(closes, index);
+    }
+    return 0.5; // Neutral
 }
 
 double CalculateMomentumVelocity() {
-    // Placeholder implementation
-    return -20.0 + MathRand() % 40; // -20 to 20
+    // Prawdziwa implementacja prędkości momentum
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 10, closes) == 10) {
+        return CalculateMomentumVelocityFromData(closes);
+    }
+    return 0.0; // Neutral
 }
 
 double CalculateMomentumAcceleration() {
-    // Placeholder implementation
-    return -10.0 + MathRand() % 20; // -10 to 10
+    // Prawdziwa implementacja przyspieszenia momentum
+    double closes[];
+    if(CopyClose(Symbol(), PERIOD_CURRENT, 0, 15, closes) == 15) {
+        return CalculateMomentumAccelerationFromData(closes);
+    }
+    return 0.0; // Neutral
 }
 
 double CalculateROC(double &prices[], int period) {
@@ -144,18 +715,78 @@ double CalculateROC(double &prices[], int period) {
 }
 
 double CalculateTRIX(double &prices[], int period) {
-    // Placeholder implementation
-    return -30.0 + MathRand() % 60; // -30 to 30
+    // Prawdziwa implementacja TRIX
+    if(ArraySize(prices) < period * 3) return 0.0;
+    
+    double ema1[], ema2[], ema3[];
+    ArrayResize(ema1, ArraySize(prices));
+    ArrayResize(ema2, ArraySize(prices));
+    ArrayResize(ema3, ArraySize(prices));
+    
+    // Pierwsza EMA
+    double multiplier = 2.0 / (period + 1.0);
+    ema1[0] = prices[0];
+    for(int i = 1; i < ArraySize(prices); i++) {
+        ema1[i] = (prices[i] * multiplier) + (ema1[i-1] * (1.0 - multiplier));
+    }
+    
+    // Druga EMA
+    ema2[0] = ema1[0];
+    for(int i = 1; i < ArraySize(prices); i++) {
+        ema2[i] = (ema1[i] * multiplier) + (ema2[i-1] * (1.0 - multiplier));
+    }
+    
+    // Trzecia EMA
+    ema3[0] = ema2[0];
+    for(int i = 1; i < ArraySize(prices); i++) {
+        ema3[i] = (ema2[i] * multiplier) + (ema3[i-1] * (1.0 - multiplier));
+    }
+    
+    // TRIX = zmiana procentowa trzeciej EMA
+    if(ema3[1] != 0) {
+        return ((ema3[0] - ema3[1]) / ema3[1]) * 100.0;
+    }
+    
+    return 0.0;
 }
 
 double CalculateAwesome(double &prices[]) {
-    // Placeholder implementation
-    return -50.0 + MathRand() % 100; // -50 to 50
+    // Prawdziwa implementacja Awesome Oscillator
+    if(ArraySize(prices) < 34) return 0.0;
+    
+    double sma5 = 0.0, sma34 = 0.0;
+    
+    // SMA 5
+    for(int i = 0; i < 5; i++) {
+        sma5 += prices[i];
+    }
+    sma5 /= 5.0;
+    
+    // SMA 34
+    for(int i = 0; i < 34; i++) {
+        sma34 += prices[i];
+    }
+    sma34 /= 34.0;
+    
+    return sma5 - sma34;
 }
 
 double CalculateWilliamsR(double &prices[], int period) {
-    // Placeholder implementation
-    return -100.0 + MathRand() % 100; // -100 to 0
+    // Prawdziwa implementacja Williams %R
+    if(ArraySize(prices) < period) return -50.0;
+    
+    double highest_high = prices[0];
+    double lowest_low = prices[0];
+    
+    for(int i = 1; i < period; i++) {
+        if(prices[i] > highest_high) highest_high = prices[i];
+        if(prices[i] < lowest_low) lowest_low = prices[i];
+    }
+    
+    if(highest_high == lowest_low) return -50.0;
+    
+    double current_price = prices[0];
+    return ((highest_high - current_price) / (highest_high - lowest_low)) * -100.0;
 }
 
 double CalculateVWAP(double &prices[], double &volumes[]) {
@@ -214,8 +845,33 @@ double FindResistance(double &prices[], int bars_count) {
 }
 
 double DetectPatternBreakthrough(double &prices[]) {
-    // Placeholder implementation
-    return 20.0 + MathRand() % 80; // 20-100
+    // Prawdziwa implementacja detekcji przełamania wzorców
+    if(ArraySize(prices) < 20) return 50.0;
+    
+    // Oblicz siłę trendu
+    double trend_strength = CalculateTrendStrength(prices);
+    
+    // Oblicz zmienność
+    double volatility = CalculateVolatility(prices, 20);
+    
+    // Oblicz momentum
+    double momentum = (prices[0] - prices[19]) / prices[19] * 100.0;
+    
+    // Oblicz siłę przełamania na podstawie kombinacji czynników
+    double breakthrough_strength = 0.0;
+    
+    // Trend strength contribution (40%)
+    breakthrough_strength += (trend_strength / 100.0) * 40.0;
+    
+    // Volatility contribution (30%)
+    double normalized_volatility = MathMin(volatility / 0.01, 1.0); // Normalizuj do 0-1
+    breakthrough_strength += normalized_volatility * 30.0;
+    
+    // Momentum contribution (30%)
+    double normalized_momentum = MathAbs(momentum) / 10.0; // Normalizuj do 0-1
+    breakthrough_strength += MathMin(normalized_momentum, 1.0) * 30.0;
+    
+    return MathMax(0.0, MathMin(100.0, breakthrough_strength));
 }
 
 class BitternessSpirit {
@@ -947,4 +1603,209 @@ BitternessSpirit::~BitternessSpirit() {
     if(m_volume_analyzer != NULL) delete m_volume_analyzer;
     if(m_fractal_calculator != NULL) delete m_fractal_calculator;
     if(m_wave_analyzer != NULL) delete m_wave_analyzer;
+}
+
+//+------------------------------------------------------------------+
+//| IMPLEMENTACJE FUNKCJI POMOCNICZYCH                                |
+//+------------------------------------------------------------------+
+
+// Obliczanie zmienności
+double CalculateVolatility(double &data[], int period) {
+    if(ArraySize(data) < period) return 0.0;
+    
+    double avg = 0.0;
+    for(int i = 0; i < period; i++) {
+        avg += data[i];
+    }
+    avg /= period;
+    
+    double variance = 0.0;
+    for(int i = 0; i < period; i++) {
+        variance += MathPow(data[i] - avg, 2);
+    }
+    variance /= period;
+    
+    return MathSqrt(variance);
+}
+
+// Obliczanie RSI z danych
+double CalculateRSIFromData(double &closes[]) {
+    if(ArraySize(closes) < 15) return 50.0;
+    
+    double gains = 0.0, losses = 0.0;
+    
+    for(int i = 1; i < 15; i++) {
+        double change = closes[i] - closes[i-1];
+        if(change > 0) gains += change;
+        else losses -= change;
+    }
+    
+    double avg_gain = gains / 14.0;
+    double avg_loss = losses / 14.0;
+    
+    if(avg_loss == 0) return 100.0;
+    
+    double rs = avg_gain / avg_loss;
+    return 100.0 - (100.0 / (1.0 + rs));
+}
+
+// Obliczanie MACD z danych
+double CalculateMACDFromData(double &closes[]) {
+    if(ArraySize(closes) < 26) return 0.0;
+    
+    double ema12 = 0.0, ema26 = 0.0;
+    
+    // EMA 12
+    double multiplier12 = 2.0 / (12.0 + 1.0);
+    ema12 = closes[0];
+    for(int i = 1; i < 26; i++) {
+        ema12 = (closes[i] * multiplier12) + (ema12 * (1.0 - multiplier12));
+    }
+    
+    // EMA 26
+    double multiplier26 = 2.0 / (26.0 + 1.0);
+    ema26 = closes[0];
+    for(int i = 1; i < 26; i++) {
+        ema26 = (closes[i] * multiplier26) + (ema26 * (1.0 - multiplier26));
+    }
+    
+    return ema12 - ema26;
+}
+
+// Obliczanie Stochastic z danych
+double CalculateStochasticFromData(double &highs[], double &lows[], double &closes[]) {
+    if(ArraySize(highs) < 14 || ArraySize(lows) < 14 || ArraySize(closes) < 14) return 50.0;
+    
+    double highest_high = highs[0];
+    double lowest_low = lows[0];
+    
+    for(int i = 1; i < 14; i++) {
+        if(highs[i] > highest_high) highest_high = highs[i];
+        if(lows[i] < lowest_low) lowest_low = lows[i];
+    }
+    
+    if(highest_high == lowest_low) return 50.0;
+    
+    double current_close = closes[0];
+    return ((current_close - lowest_low) / (highest_high - lowest_low)) * 100.0;
+}
+
+// Obliczanie ADX z danych
+double CalculateADXFromData(double &highs[], double &lows[], double &closes[]) {
+    if(ArraySize(highs) < 20 || ArraySize(lows) < 20 || ArraySize(closes) < 20) return 25.0;
+    
+    // Uproszczona implementacja ADX
+    double true_ranges = 0.0;
+    double directional_moves = 0.0;
+    
+    for(int i = 1; i < 20; i++) {
+        double tr = MathMax(highs[i] - lows[i], 
+                           MathMax(MathAbs(highs[i] - closes[i-1]), 
+                                  MathAbs(lows[i] - closes[i-1])));
+        true_ranges += tr;
+        
+        double dm = 0.0;
+        if(highs[i] - highs[i-1] > lows[i-1] - lows[i]) {
+            dm = MathMax(0.0, highs[i] - highs[i-1]);
+        }
+        directional_moves += dm;
+    }
+    
+    if(true_ranges == 0) return 25.0;
+    
+    double adx = (directional_moves / true_ranges) * 100.0;
+    return MathMax(0.0, MathMin(100.0, adx));
+}
+
+// Obliczanie siły wsparcia/oporu
+double CalculateSupportResistanceStrength(double &highs[], double &lows[]) {
+    if(ArraySize(highs) < 50 || ArraySize(lows) < 50) return 50.0;
+    
+    // Znajdź kluczowe poziomy
+    double resistance_levels[];
+    double support_levels[];
+    
+    // Prosta implementacja - można rozszerzyć
+    double avg_high = 0.0, avg_low = 0.0;
+    
+    for(int i = 0; i < 50; i++) {
+        avg_high += highs[i];
+        avg_low += lows[i];
+    }
+    
+    avg_high /= 50.0;
+    avg_low /= 50.0;
+    
+    double current_price = iClose(Symbol(), PERIOD_CURRENT, 0);
+    double high_distance = MathAbs(current_price - avg_high);
+    double low_distance = MathAbs(current_price - avg_low);
+    
+    if(high_distance < low_distance) {
+        return MathMax(0.0, MathMin(100.0, 100.0 - (high_distance / avg_high) * 100.0));
+    } else {
+        return MathMax(0.0, MathMin(100.0, 100.0 - (low_distance / avg_low) * 100.0));
+    }
+}
+
+// Obliczanie siły trendu
+double CalculateTrendStrength(double &closes[]) {
+    if(ArraySize(closes) < 20) return 50.0;
+    
+    // Linear regression slope
+    double sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_x2 = 0.0;
+    
+    for(int i = 0; i < 20; i++) {
+        sum_x += i;
+        sum_y += closes[i];
+        sum_xy += i * closes[i];
+        sum_x2 += i * i;
+    }
+    
+    double n = 20.0;
+    double slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
+    
+    // Normalizuj slope do zakresu 0-100
+    double normalized_slope = MathAbs(slope) * 1000.0; // Skala
+    return MathMax(0.0, MathMin(100.0, normalized_slope));
+}
+
+// Obliczanie metryki pochodnej
+double CalculateDerivedMetricFromData(double &closes[], int index) {
+    if(ArraySize(closes) < 20) return 0.5;
+    
+    switch(index % 5) {
+        case 0: return CalculateVolatility(closes, 10) / 100.0; // Normalizowana zmienność
+        case 1: return (CalculateRSIFromData(closes) - 50.0) / 50.0; // Normalizowany RSI
+        case 2: return MathTanh(CalculateMACDFromData(closes) / 100.0); // Normalizowany MACD
+        case 3: return CalculateTrendStrength(closes) / 100.0; // Normalizowana siła trendu
+        case 4: return (closes[0] - closes[19]) / closes[19]; // Zmiana procentowa
+        default: return 0.5;
+    }
+}
+
+// Obliczanie prędkości momentum
+double CalculateMomentumVelocityFromData(double &closes[]) {
+    if(ArraySize(closes) < 10) return 0.0;
+    
+    double current_momentum = (closes[0] - closes[9]) / closes[9] * 100.0;
+    double previous_momentum = (closes[1] - closes[10]) / closes[10] * 100.0;
+    
+    return current_momentum - previous_momentum;
+}
+
+// Obliczanie przyspieszenia momentum
+double CalculateMomentumAccelerationFromData(double &closes[]) {
+    if(ArraySize(closes) < 15) return 0.0;
+    
+    double current_velocity = CalculateMomentumVelocityFromData(closes);
+    
+    double temp_closes[];
+    ArrayResize(temp_closes, 10);
+    for(int i = 0; i < 10; i++) {
+        temp_closes[i] = closes[i + 1];
+    }
+    
+    double previous_velocity = CalculateMomentumVelocityFromData(temp_closes);
+    
+    return current_velocity - previous_velocity;
 }

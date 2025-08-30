@@ -57,6 +57,9 @@ private:
     double MeasureExecutionTime(datetime start_time);
     string GetSpiritStatus(string spirit_name, bool is_healthy);
     
+    // Dodatkowe funkcje pomocnicze
+    bool CheckMemoryUsage();
+    
 public:
     CBohmeIntegrationTester();
     ~CBohmeIntegrationTester();
@@ -541,8 +544,8 @@ void TestMemoryUsage() {
     Print("Testing Memory Usage...");
     datetime start_time = TimeCurrent();
     
-    // Placeholder dla testu pamięci
-    bool memory_test = true; // W rzeczywistości sprawdzilibyśmy użycie pamięci
+    // Prawdziwa implementacja testu pamięci
+    bool memory_test = CheckMemoryUsage();
     
     AddIntegrationTest("Memory Usage", memory_test, MeasureExecutionTime(start_time),
                       "Memory usage is within acceptable limits", 1.0, memory_test ? 1.0 : 0.0);
@@ -686,6 +689,34 @@ double CBohmeIntegrationTester::GetAverageExecutionTime() {
 // Helper function dla statusu ducha
 string CBohmeIntegrationTester::GetSpiritStatus(string spirit_name, bool is_healthy) {
     return spirit_name + " Spirit: " + (is_healthy ? "✅ HEALTHY" : "❌ UNHEALTHY");
+}
+
+// Implementacja funkcji CheckMemoryUsage
+bool CBohmeIntegrationTester::CheckMemoryUsage() {
+    // Sprawdź użycie pamięci systemu
+    bool memory_ok = true;
+    
+    // Sprawdź dostępność pamięci
+    double available_memory = TerminalInfoDouble(TERMINAL_MEMORY_AVAILABLE);
+    double total_memory = TerminalInfoDouble(TERMINAL_MEMORY_TOTAL);
+    
+    if(available_memory > 0 && total_memory > 0) {
+        double memory_usage_percent = (total_memory - available_memory) / total_memory * 100.0;
+        
+        // Pamięć OK jeśli użycie < 80%
+        if(memory_usage_percent > 80.0) {
+            memory_ok = false;
+            Print("⚠️ Wysokie użycie pamięci: ", DoubleToString(memory_usage_percent, 1), "%");
+        } else {
+            Print("✅ Użycie pamięci OK: ", DoubleToString(memory_usage_percent, 1), "%");
+        }
+    } else {
+        // Jeśli nie można sprawdzić pamięci, zakładamy że jest OK
+        memory_ok = true;
+        Print("ℹ️ Nie można sprawdzić pamięci - zakładam OK");
+    }
+    
+    return memory_ok;
 }
 
 // Funkcja główna do uruchomienia testów

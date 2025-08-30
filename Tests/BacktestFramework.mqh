@@ -654,8 +654,32 @@ double CBohmeBacktester::CalculateCalmarRatio() {
 }
 
 double CBohmeBacktester::CalculateSortinoRatio() {
-    // Uproszczony Sortino Ratio
-    return CalculateSharpeRatio(); // Placeholder
+    // Prawdziwa implementacja Sortino Ratio
+    if(m_returns_count == 0) return 0.0;
+    
+    double downside_deviation = 0.0;
+    double negative_returns_sum = 0.0;
+    int negative_returns_count = 0;
+    
+    // Oblicz downside deviation (tylko negatywne zwroty)
+    for(int i = 0; i < m_returns_count; i++) {
+        if(m_returns[i] < 0) {
+            downside_deviation += MathPow(m_returns[i], 2);
+            negative_returns_sum += m_returns[i];
+            negative_returns_count++;
+        }
+    }
+    
+    if(negative_returns_count > 0) {
+        downside_deviation = MathSqrt(downside_deviation / negative_returns_count);
+        double average_return = negative_returns_sum / negative_returns_count;
+        
+        if(downside_deviation > 0) {
+            return average_return / downside_deviation;
+        }
+    }
+    
+    return 0.0;
 }
 
 double CBohmeBacktester::CalculateRecoveryFactor() {
